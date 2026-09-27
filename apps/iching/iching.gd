@@ -50,6 +50,7 @@ func look() -> Theme:
 	theme.set_type_variation(Drawing.HEXAGRAM, &"Control")
 	theme.set_color(&"line", Drawing.HEXAGRAM, palette[&"ink"])
 	theme.set_color(&"faint", Drawing.HEXAGRAM, palette[&"lit"])
+	theme.set_color(&"mark", Drawing.HEXAGRAM, FactoryLook.second_accent(palette))
 	theme.set_constant(&"least_height", Drawing.HEXAGRAM, roundi(HEXAGRAM_HEIGHT * grow))
 	theme.set_type_variation(&"SmallHexagram", Drawing.HEXAGRAM)
 	theme.set_constant(&"least_height", &"SmallHexagram", roundi(SMALL_HEXAGRAM_HEIGHT * grow))

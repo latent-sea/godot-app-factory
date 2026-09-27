@@ -10,7 +10,7 @@ extends RefCounted
 
 const H := preload("res://hexagrams.gd")
 
-## Theme types, with their colours: line and faint for a hexagram, ground and edge for the square.
+## Theme types, with their colours: line, faint and mark for a hexagram, ground and edge for the square.
 const HEXAGRAM := &"Hexagram"
 const SQUARE := &"CastSquare"
 ## The hexagram's width, as a share of its height; its bars take this share of that, the marks the rest.
@@ -22,6 +22,7 @@ const BARS_SHARE := 0.78
 static func hexagram(on: Control, lines: Variant) -> void:
 	var cast: Array = lines if lines is Array else []
 	var ink := on.get_theme_color(&"line", HEXAGRAM)
+	var marked := on.get_theme_color(&"mark", HEXAGRAM)
 	var faint := on.get_theme_color(&"faint", HEXAGRAM)
 	var height := on.size.y
 	var width := minf(on.size.x, height * WIDTH_PER_HEIGHT)
@@ -46,10 +47,10 @@ static func hexagram(on: Control, lines: Variant) -> void:
 		var mark := thick * 0.42
 		var stroke := maxf(2.0, thick * 0.14)
 		if line == H.OLD_YANG:
-			on.draw_arc(mark_at, mark, 0.0, TAU, 32, ink, stroke, true)
+			on.draw_arc(mark_at, mark, 0.0, TAU, 32, marked, stroke, true)
 		elif line == H.OLD_YIN:
-			on.draw_line(mark_at + Vector2(-mark, -mark), mark_at + Vector2(mark, mark), ink, stroke, true)
-			on.draw_line(mark_at + Vector2(-mark, mark), mark_at + Vector2(mark, -mark), ink, stroke, true)
+			on.draw_line(mark_at + Vector2(-mark, -mark), mark_at + Vector2(mark, mark), marked, stroke, true)
+			on.draw_line(mark_at + Vector2(-mark, mark), mark_at + Vector2(mark, -mark), marked, stroke, true)
 
 
 ## The square: one plain surface, the largest square the space holds, in its middle.
