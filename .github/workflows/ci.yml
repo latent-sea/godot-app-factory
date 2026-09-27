@@ -61,6 +61,8 @@ jobs:
     needs: check
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: write  # to publish the debug-latest pre-release
     steps:
       - uses: actions/checkout@v7
 
@@ -104,3 +106,18 @@ jobs:
           path: build/*.apk
           if-no-files-found: error
           retention-days: 30
+
+      # A fixed link a phone can open without signing in:
+      # https://github.com/<repo>/releases/download/debug-latest/<app>-debug.apk
+      - name: Publish to the debug-latest pre-release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=debug-latest
+          notes="Debug builds from ${GITHUB_SHA::7} on ${GITHUB_REF_NAME}, $(date -u '+%Y-%m-%d %H:%M UTC'). Signed with the shared debug key: install by sideloading; not for the Play Store."
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --prerelease --title "Debug builds" --notes "$notes" --target "$GITHUB_SHA"
+          fi
+          gh release upload "$tag" build/*.apk --clobber
+          gh release edit "$tag" --notes "$notes"
