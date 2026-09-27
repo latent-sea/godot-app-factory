@@ -28,7 +28,10 @@ func run() -> void:
 	_claim("an empty line is refused with a reason", _shows("Type something to add") and _rows().is_empty())
 
 	var clear: Node = _pressables(Items.CLEARS)[0]
-	_claim("clearing with nothing ticked is refused", not clear.is_usable() and str(clear.get_reason()) == "Nothing is ticked yet")
+	_claim("Clear done is unusable while nothing is ticked", not clear.is_usable())
+	clear.pressed()
+	await _frames()
+	_claim("and pressing it says nothing: no reason is shown", not _shows("Nothing is ticked yet"))
 
 	for words: String in ["Buy tape", "Call the landlord", "Book the van"]:
 		line.text = words
@@ -41,11 +44,12 @@ func run() -> void:
 	_rows()[2].pressed()
 	await _frames()
 	_claim("tapping a row ticks it", _shows("1 of 3 done"))
-	_claim("clearing is allowed once something is ticked", clear.is_usable())
+	_claim("Clear done is usable once something is ticked", clear.is_usable())
 
 	_rows()[2].pressed()
 	await _frames()
 	_claim("tapping again unticks it", _shows("0 of 3 done"))
+	_claim("and unusable again once nothing is", not clear.is_usable())
 
 	_rows()[0].pressed()
 	await _frames()

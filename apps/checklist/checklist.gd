@@ -3,7 +3,7 @@ extends ChimeApp
 ## Checklist: add things, tick them off, swipe them away. The factory's first app.
 ##
 ## One screen: a title, how many are done, a line to add to, the list, and a
-## button clearing what is done. The facts live in items.gd; this file
+## button clearing what is done, faded until something is. The facts live in items.gd; this file
 ## declares the actions and their words, and arranges the screen.
 
 const Items := preload("res://items.gd")
@@ -16,6 +16,11 @@ const PAGE := &"ChecklistPage"
 ## The theme types of a done item's words, and of the tick boxes.
 const DONE := &"ChecklistDone"
 const TICK := &"ChecklistTick"
+## The theme type of the screen's one button: filled, so it reads as a button.
+const ACTION := &"ChecklistAction"
+## A button with nothing to do: faded grey, nearly white.
+const FADED := Color("#e9edf0")
+const FADED_WORDS := Color("#aab4bd")
 ## The tick boxes, as words so they grow with the look.
 const UNTICKED := "☐"
 const TICKED := "☑"
@@ -63,6 +68,17 @@ func look() -> Theme:
 	theme.set_stylebox(&"focus", GdChime.Fields.FIELD, _field_box(PALETTE[&"accent"], 3))
 	theme.set_color(&"font_color", GdChime.Fields.FIELD, PALETTE[&"ink"])
 	theme.set_color(&"caret_color", GdChime.Fields.FIELD, PALETTE[&"accent"])
+	# Clear done: a filled teal button with white words, darker while pressed,
+	# and faded to nearly white while there is nothing to clear.
+	theme.set_type_variation(ACTION, GdChime.Themes.PRESSABLE)
+	var accent: Color = PALETTE[&"accent"]
+	for state: StringName in [&"normal", &"hover", &"glowing"]:
+		theme.set_stylebox(state, ACTION, _button_box(accent if state == &"normal" else accent.darkened(0.25)))
+		theme.set_color(StringName("font_color_" + state), ACTION, PALETTE[&"raised"])
+	# gd-chime draws a button that can't be used as inert, and flashes refusing when pressed anyway.
+	for state: StringName in [&"inert", &"refusing"]:
+		theme.set_stylebox(state, ACTION, _button_box(FADED))
+		theme.set_color(StringName("font_color_" + state), ACTION, FADED_WORDS)
 	PhoneLook.enlarge(theme, PhoneLook.factor())
 	return theme
 
@@ -74,6 +90,14 @@ func _field_box(edge: Color, width: int) -> StyleBoxFlat:
 	box.set_border_width_all(width)
 	box.set_corner_radius_all(8)
 	box.set_content_margin_all(12)
+	return box
+
+
+func _button_box(fill: Color) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = fill
+	box.set_corner_radius_all(12)
+	box.set_content_margin_all(16)
 	return box
 
 
@@ -109,7 +133,9 @@ func describe() -> GdChime.Desc:
 		ui.text(counted, GdChime.Themes.REASON),
 		ui.field(Items.ADDS, GdChime.Fields.FIELD).takes_focus(),
 		ui.scroll(rows, null, &"down").grow(),
-		ui.button(Items.CLEARS),
+		# Words only: no reason under it. A disabled button just looks faded;
+		# its reason printed under it read as a second button on a phone.
+		ui.pressable(Items.CLEARS, {}, [ui.text(ui.words(Items.CLEARS), GdChime.Themes.FACE)], ACTION),
 	])
 	return ui.app(&"checklist", [ui.screen(LIST, [ui.surface(PAGE, [screen])], list)])
 
