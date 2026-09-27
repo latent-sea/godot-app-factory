@@ -57,6 +57,13 @@ jobs:
       - name: Check apps
         run: python3 tooling/check_app.py --godot ~/godot/godot
 
+      # A new app must pass its checks as create_app makes it, with no hand edits.
+      - name: Check a freshly created app
+        run: |
+          python3 tooling/create_app.py ci_scratch
+          python3 tooling/install.py ci_scratch
+          python3 tooling/check_app.py ci_scratch --godot ~/godot/godot
+
   android:
     needs: check
     runs-on: ubuntu-24.04
