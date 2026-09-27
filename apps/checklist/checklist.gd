@@ -8,8 +8,17 @@ extends ChimeApp
 
 const Items := preload("res://items.gd")
 const Walk := preload("res://probe.gd")
+const PhoneLook := preload("res://phone_look.gd")
 
 const LIST := &"list"
+## The theme type of the page every part of the screen stands on.
+const PAGE := &"ChecklistPage"
+## The theme types of a done item's words, and of the tick boxes.
+const DONE := &"ChecklistDone"
+const TICK := &"ChecklistTick"
+## The tick boxes, as words so they grow with the look.
+const UNTICKED := "☐"
+const TICKED := "☑"
 const SAVED_AT := "user://checklist.json"
 ## The probe keeps its own file, so walking the app never touches real items.
 const PROBED_AT := "user://checklist_probe.json"
@@ -33,7 +42,39 @@ var saving: GdChime.SettingsFile
 
 
 func look() -> Theme:
-	return GdChime.Themes.new(PALETTE)
+	var theme := GdChime.Themes.new(PALETTE)
+	# The page: the list kept off the glass's edges.
+	theme.set_type_variation(PAGE, &"Control")
+	var page := StyleBoxFlat.new()
+	page.bg_color = PALETTE[&"ground"]
+	page.set_content_margin_all(24)
+	theme.set_stylebox(&"panel", PAGE, page)
+	# The title reads as one, bigger than the items under it.
+	theme.set_font_size(&"font_size", GdChime.Themes.TITLE, 44)
+	# A done item's words and tick, quieter than one still to do.
+	theme.set_type_variation(DONE, GdChime.Themes.FACE)
+	theme.set_color(&"font_color", DONE, PALETTE[&"ink_soft"])
+	theme.set_type_variation(TICK, GdChime.Themes.FACE)
+	theme.set_color(&"font_color", TICK, PALETTE[&"accent"])
+	# The add line: a white field outlined in the quiet ink, in teal while typing.
+	var field := _field_box(PALETTE[&"ink_soft"], 2)
+	theme.set_stylebox(&"normal", GdChime.Fields.FIELD, field)
+	theme.set_stylebox(&"read_only", GdChime.Fields.FIELD, field)
+	theme.set_stylebox(&"focus", GdChime.Fields.FIELD, _field_box(PALETTE[&"accent"], 3))
+	theme.set_color(&"font_color", GdChime.Fields.FIELD, PALETTE[&"ink"])
+	theme.set_color(&"caret_color", GdChime.Fields.FIELD, PALETTE[&"accent"])
+	PhoneLook.enlarge(theme, PhoneLook.factor())
+	return theme
+
+
+func _field_box(edge: Color, width: int) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = PALETTE[&"raised"]
+	box.border_color = edge
+	box.set_border_width_all(width)
+	box.set_corner_radius_all(8)
+	box.set_content_margin_all(12)
+	return box
 
 
 func declare(register: GdChime.Actions) -> void:
@@ -66,24 +107,23 @@ func describe() -> GdChime.Desc:
 	var screen := ui.column([
 		ui.text(GdChime.Phrase.of("Checklist"), GdChime.Themes.TITLE),
 		ui.text(counted, GdChime.Themes.REASON),
-		ui.field(Items.ADDS).takes_focus(),
+		ui.field(Items.ADDS, GdChime.Fields.FIELD).takes_focus(),
 		ui.scroll(rows, null, &"down").grow(),
 		ui.button(Items.CLEARS),
 	])
-	return ui.app(&"checklist", [ui.screen(LIST, [screen], list)])
+	return ui.app(&"checklist", [ui.screen(LIST, [ui.surface(PAGE, [screen])], list)])
 
 
-## One item: its tick and its words. Tapped, it ticks; swiped left, it is deleted.
+## One item: its tick box and its words, quieter once done. Tapped, it ticks; swiped left, it is deleted.
 ## Described once with no item at all, so every read allows for null.
 func _row(item: GdChime.Bound) -> GdChime.Desc:
 	var carried: GdChime.Bound = item.map(func(one: Variant) -> Dictionary: return {} if one == null else {"id": one["id"]})
-	var tick: GdChime.Bound = item.map(func(one: Variant) -> Variant:
-		if one == null:
-			return null
-		return GdChime.Status.WELL if one["done"] else GdChime.Status.STILL)
+	var done: GdChime.Bound = item.map(func(one: Variant) -> bool: return one != null and one["done"])
 	var words: GdChime.Bound = item.map(func(one: Variant) -> String: return "" if one == null else one["words"])
 	var sides := {GdChime.SwipeRow.LEFT: {"action": Items.DELETES, "words": GdChime.Phrase.of("Delete"), "state": GdChime.Status.FAULT}}
-	var content := ui.row([GdChime.Status.mark(ui, tick), ui.text(words, GdChime.Themes.FACE).wraps().grow()])
+	var content := ui.when(done,
+		ui.row([ui.text(TICKED, TICK), ui.text(words, DONE).wraps().grow()]),
+		ui.row([ui.text(UNTICKED, TICK), ui.text(words, GdChime.Themes.FACE).wraps().grow()]))
 	return GdChime.SwipeRow.make(ui, Items.TOGGLES, carried, content, {"sides": sides})
 
 
