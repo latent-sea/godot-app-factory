@@ -1,0 +1,34 @@
+extends ChimeApp
+
+## I Ching: one screen to build on. Made by tooling/create_app.py.
+##
+## An app declares its actions and their words (declare), says what its
+## screens hold (describe), and keeps its facts in models - controllers made
+## in describe and handed to the screen that reads them. See apps/checklist
+## for a whole app, and gd-chime's README for the vocabulary.
+
+const FactoryLook := preload("res://addons/factory_look/look.gd")
+const Walk := preload("res://probe.gd")
+
+const HOME := &"home"
+
+
+## The factory's look. Pass a palette of your own to make() to change its colours.
+func look() -> Theme:
+	return FactoryLook.make()
+
+
+func declare(_register: GdChime.Actions) -> void:
+	pass
+
+
+func describe() -> GdChime.Desc:
+	var screen := ui.column([
+		ui.text(GdChime.Phrase.of("I Ching"), GdChime.Themes.TITLE),
+		ui.text(GdChime.Phrase.of("A new app, ready to build."), FactoryLook.QUIET),
+	])
+	return ui.app(&"iching", [ui.screen(HOME, [FactoryLook.page(ui, [screen])])])
+
+
+func probe() -> RefCounted:
+	return Walk.new(self)
