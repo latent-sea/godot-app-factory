@@ -86,6 +86,7 @@ func describe() -> GdChime.Desc:
 	prompt_list = PromptList.new(chimes, commands, EDIT)
 	# The copy drawer takes no model of its own, so copying answers app-wide.
 	copying = model(Copying.new(chimes, cast, prompt_list))
+	FactoryLook.splash(self)
 	Basics.answer_back(self)
 	saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("iching", saved_at)))
 	saving.keep("iching", prompt_list)
