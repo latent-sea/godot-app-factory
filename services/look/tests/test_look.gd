@@ -61,6 +61,7 @@ func _init() -> void:
 
 	_claim(theme.get_stylebox(&"focus", Look.LINK) is StyleBoxEmpty and theme.get_stylebox(&"focus", Look.CARD) is StyleBoxEmpty, "links and cards draw no focus frame")
 	_claim(theme.get_stylebox(&"normal", Look.LINK) is StyleBoxEmpty, "a link has no box")
+	_claim(theme.get_stylebox(&"inert", Look.LINK) != theme.get_stylebox(&"normal", Look.LINK), "a faded link has a box of its own, so its words are inked again once it can be used")
 	var card := theme.get_stylebox(&"normal", Look.CARD) as StyleBoxFlat
 	_claim(card != null and card.bg_color == Look.PALETTE[&"raised"] and card.border_color == Look.PALETTE[&"lit"], "a card is raised, outlined in the lit colour")
 	# Faded must read as off: dimmer than a usable button's words, whatever the palette.

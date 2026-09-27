@@ -14,7 +14,7 @@ extends RefCounted
 ##   ACTION  a filled pill in the accent, softly glowing; faded while it can't be used
 ##   LINK    words in the accent that go somewhere: no box around them
 ##   CARD    a card a shade lighter than the ground, thinly outlined, pressed as a whole
-##   Field   a white field outlined, in the accent while typing
+##   Field   a field (and a TextArea) on the raised ground, outlined in the accent while typing
 ##
 ## THE RULES, from using the apps on a phone (docs/look-backlog.md):
 ## - A control that can't be used looks faded and says nothing more. Use
@@ -117,11 +117,13 @@ static func _field(theme: Theme, palette: Dictionary) -> void:
 	var typing := _box(palette[&"raised"], CORNER, 14)
 	typing.border_color = palette[&"accent"]
 	typing.set_border_width_all(3)
-	theme.set_stylebox(&"normal", GdChime.Fields.FIELD, resting)
-	theme.set_stylebox(&"read_only", GdChime.Fields.FIELD, resting)
-	theme.set_stylebox(&"focus", GdChime.Fields.FIELD, typing)
-	theme.set_color(&"font_color", GdChime.Fields.FIELD, palette[&"ink"])
-	theme.set_color(&"caret_color", GdChime.Fields.FIELD, palette[&"accent"])
+	# A typed line and words typed over many lines, dressed alike.
+	for kind: StringName in [GdChime.Fields.FIELD, GdChime.Fields.TEXT_AREA]:
+		theme.set_stylebox(&"normal", kind, resting)
+		theme.set_stylebox(&"read_only", kind, resting)
+		theme.set_stylebox(&"focus", kind, typing)
+		theme.set_color(&"font_color", kind, palette[&"ink"])
+		theme.set_color(&"caret_color", kind, palette[&"accent"])
 
 
 static func _action(theme: Theme, palette: Dictionary) -> void:
@@ -158,6 +160,12 @@ static func _link(theme: Theme, palette: Dictionary) -> void:
 	bare.set_content_margin_all(8)
 	for state: StringName in STATES + [&"focus"]:
 		theme.set_stylebox(state, LINK, bare)
+	# gd-chime re-inks a press's words only when its box changes (face.gd's
+	# _blend), so the faded states need a box of their own - with one box for
+	# every state, a link built faded (a screen's Back before it is shown) kept
+	# its faded words after it could be used.
+	for state: StringName in [&"inert", &"refusing"]:
+		theme.set_stylebox(state, LINK, bare.duplicate())
 	for state: StringName in STATES:
 		theme.set_color(StringName("font_color_" + state), LINK, palette[&"accent"])
 	theme.set_color(&"font_color_inert", LINK, faded_words(palette))
