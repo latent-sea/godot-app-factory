@@ -33,14 +33,14 @@ func _init() -> void:
 	_claim(theme.has_stylebox(&"panel", Look.PAGE), "the page has a ground")
 	_claim(theme.get_font_size(&"font_size", GdChime.Themes.TITLE) == Look.TITLE_SIZE, "a title is the title size on a desktop")
 	_claim(theme.get_color(&"font_color", Look.QUIET) == Look.PALETTE[&"ink_soft"], "quiet words are in the soft ink")
-	_claim(theme.get_color(&"font_color", Look.MARKED) == Look.PALETTE[&"accent"], "marked words are in the accent")
+	_claim(theme.get_color(&"font_color", Look.MARKED) == Look.PALETTE[&"accent_2"], "marked words are in the second accent")
 
 	var usable := theme.get_stylebox(&"normal", Look.ACTION) as StyleBoxFlat
 	_claim(usable != null and usable.bg_color == Look.PALETTE[&"accent"], "a usable button is filled with the accent")
 	for state: StringName in [&"inert", &"refusing"]:
 		var faded := theme.get_stylebox(state, Look.ACTION) as StyleBoxFlat
-		_claim(faded != null and faded.bg_color == Look.FADED, "a button that can't be used is faded while %s" % state)
-		_claim(theme.get_color(StringName("font_color_" + state), Look.ACTION) == Look.FADED_WORDS, "and its words are faded while %s" % state)
+		_claim(faded != null and faded.bg_color == Look.faded(Look.PALETTE), "a button that can't be used is faded while %s" % state)
+		_claim(theme.get_color(StringName("font_color_" + state), Look.ACTION) == Look.faded_words(Look.PALETTE), "and its words are faded while %s" % state)
 
 	var focus := theme.get_stylebox(&"focus", GdChime.Fields.FIELD) as StyleBoxFlat
 	_claim(focus != null and focus.border_color == Look.PALETTE[&"accent"], "a field being typed in is outlined in the accent")
@@ -48,7 +48,15 @@ func _init() -> void:
 	_claim(theme.get_stylebox(&"focus", Look.LINK) is StyleBoxEmpty and theme.get_stylebox(&"focus", Look.CARD) is StyleBoxEmpty, "links and cards draw no focus frame")
 	_claim(theme.get_stylebox(&"normal", Look.LINK) is StyleBoxEmpty, "a link has no box")
 	var card := theme.get_stylebox(&"normal", Look.CARD) as StyleBoxFlat
-	_claim(card != null and card.bg_color == Look.PALETTE[&"raised"] and card.border_color == Look.PALETTE[&"lit"], "a card is white, outlined in the lit colour")
+	_claim(card != null and card.bg_color == Look.PALETTE[&"raised"] and card.border_color == Look.PALETTE[&"lit"], "a card is raised, outlined in the lit colour")
+	# Faded must read as off: dimmer than a usable button's words, whatever the palette.
+	var usable_words: Color = theme.get_color(&"font_color_normal", Look.ACTION)
+	var off_words: Color = Look.faded_words(Look.PALETTE)
+	var ground: Color = Look.PALETTE[&"ground"]
+	_claim(absf(off_words.get_luminance() - ground.get_luminance()) < absf(usable_words.get_luminance() - ground.get_luminance()), "faded words stand out less from the ground than a usable button's")
+	var no_second := Look.PALETTE.duplicate()
+	no_second.erase(&"accent_2")
+	_claim(Look.second_accent(no_second) == Look.PALETTE[&"accent"], "a palette with one accent uses it for marks too")
 
 	var own := Look.PALETTE.duplicate()
 	own[&"accent"] = Color("#8a3ffc")

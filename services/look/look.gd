@@ -10,9 +10,10 @@ extends RefCounted
 ##   Title   a screen's title, bigger than what is under it
 ##   QUIET   words that matter less: a done item, a note
 ##   MARKED  words in the accent: a tick, a small mark
-##   ACTION  a filled button; faded to nearly white while it can't be used
+##   QUIET and MARKED: MARKED is in the second accent
+##   ACTION  a filled pill in the accent, softly glowing; faded while it can't be used
 ##   LINK    words in the accent that go somewhere: no box around them
-##   CARD    a white card, softly outlined, pressed as a whole
+##   CARD    a card a shade lighter than the ground, thinly outlined, pressed as a whole
 ##   Field   a white field outlined, in the accent while typing
 ##
 ## THE RULES, from using the apps on a phone (docs/look-backlog.md):
@@ -37,20 +38,23 @@ const CARD := &"FactoryCard"
 ## Every state gd-chime draws a pressable in (face.gd), and its focus.
 const STATES: Array[StringName] = [&"normal", &"hover", &"inert", &"current", &"glowing", &"selected", &"lifted", &"accepting", &"refusing", &"listening"]
 
-## The factory's palette: teal on a cool, quiet ground. The seven keys are
-## the ones gd-chime's Themes reads; an app's own palette needs all seven.
+## The factory's palette: dark navy glass - navy ground, cards a shade
+## lighter with thin cool outlines, light words, teal as the one strong
+## accent and violet as the second. The seven keys gd-chime's Themes reads
+## come first; an app's own palette needs those seven, and may add accent_2.
 const PALETTE := {
-	&"ground": Color("#f3f5f7"),
-	&"raised": Color("#ffffff"),
-	&"lit": Color("#dfe7ec"),
-	&"ink": Color("#17212b"),
-	&"ink_soft": Color("#4a5866"),
-	&"accent": Color("#0e6b70"),
-	&"shade": Color(0.09, 0.13, 0.17, 0.55),
+	&"ground": Color("#121829"),
+	&"raised": Color("#1b2339"),
+	&"lit": Color("#34426a"),
+	&"ink": Color("#eef2fa"),
+	&"ink_soft": Color("#8e9ab8"),
+	&"accent": Color("#19c3b3"),
+	&"shade": Color(0.02, 0.03, 0.08, 0.7),
+	&"accent_2": Color("#7c5cff"),
 }
-## A button that can't be used: faded grey, nearly white.
-const FADED := Color("#e9edf0")
-const FADED_WORDS := Color("#aab4bd")
+## Rounded throughout: cards and fields, and buttons as pills.
+const CORNER := 16
+const PILL := 40
 ## The room kept between a screen's content and the glass's edge, in base pixels before phone sizing.
 const PAGE_MARGIN := 24
 const TITLE_SIZE := 44
@@ -93,14 +97,14 @@ static func _words(theme: Theme, palette: Dictionary) -> void:
 	theme.set_type_variation(QUIET, GdChime.Themes.FACE)
 	theme.set_color(&"font_color", QUIET, palette[&"ink_soft"])
 	theme.set_type_variation(MARKED, GdChime.Themes.FACE)
-	theme.set_color(&"font_color", MARKED, palette[&"accent"])
+	theme.set_color(&"font_color", MARKED, second_accent(palette))
 
 
 static func _field(theme: Theme, palette: Dictionary) -> void:
-	var resting := _box(palette[&"raised"], 8, 12)
-	resting.border_color = palette[&"ink_soft"]
+	var resting := _box(palette[&"raised"], CORNER, 14)
+	resting.border_color = palette[&"lit"]
 	resting.set_border_width_all(2)
-	var typing := _box(palette[&"raised"], 8, 12)
+	var typing := _box(palette[&"raised"], CORNER, 14)
 	typing.border_color = palette[&"accent"]
 	typing.set_border_width_all(3)
 	theme.set_stylebox(&"normal", GdChime.Fields.FIELD, resting)
@@ -114,12 +118,19 @@ static func _action(theme: Theme, palette: Dictionary) -> void:
 	theme.set_type_variation(ACTION, GdChime.Themes.PRESSABLE)
 	var accent: Color = palette[&"accent"]
 	for state: StringName in [&"normal", &"hover", &"glowing"]:
-		theme.set_stylebox(state, ACTION, _box(accent if state == &"normal" else accent.darkened(0.25), 12, 16))
-		theme.set_color(StringName("font_color_" + state), ACTION, palette[&"raised"])
+		var lit_up := _box(accent if state == &"normal" else accent.darkened(0.2), PILL, 18)
+		# A soft glow of the accent around it, as light through glass.
+		lit_up.shadow_color = Color(accent, 0.35)
+		lit_up.shadow_size = 10
+		theme.set_stylebox(state, ACTION, lit_up)
+		theme.set_color(StringName("font_color_" + state), ACTION, Color.WHITE)
 	# gd-chime draws a button that can't be used as inert, and flashes refusing when it is pressed anyway.
 	for state: StringName in [&"inert", &"refusing"]:
-		theme.set_stylebox(state, ACTION, _box(FADED, 12, 16))
-		theme.set_color(StringName("font_color_" + state), ACTION, FADED_WORDS)
+		var off := _box(faded(palette), PILL, 18)
+		off.border_color = palette[&"lit"]
+		off.set_border_width_all(1)
+		theme.set_stylebox(state, ACTION, off)
+		theme.set_color(StringName("font_color_" + state), ACTION, faded_words(palette))
 
 
 ## Words in the accent with no box. No focus ring: gd-chime puts focus on
@@ -133,13 +144,13 @@ static func _link(theme: Theme, palette: Dictionary) -> void:
 		theme.set_stylebox(state, LINK, bare)
 	for state: StringName in STATES:
 		theme.set_color(StringName("font_color_" + state), LINK, palette[&"accent"])
-	theme.set_color(&"font_color_inert", LINK, FADED_WORDS)
+	theme.set_color(&"font_color_inert", LINK, faded_words(palette))
 
 
-## A white card outlined in the lit colour, lit a little while pressed.
+## A card a shade lighter than the ground, outlined in the lit colour, lit a little while pressed.
 static func _card(theme: Theme, palette: Dictionary) -> void:
 	theme.set_type_variation(CARD, &"Control")
-	var resting := _box(palette[&"raised"], 12, 20)
+	var resting := _box(palette[&"raised"], CORNER, 22)
 	resting.border_color = palette[&"lit"]
 	resting.set_border_width_all(2)
 	var pressed := resting.duplicate() as StyleBoxFlat
@@ -158,6 +169,20 @@ static func link(ui: RefCounted, action: StringName, payload: Variant = {}) -> G
 ## A card holding content, pressed as a whole.
 static func card(ui: RefCounted, action: StringName, content: Array, payload: Variant = {}) -> GdChime.Desc:
 	return ui.pressable(action, payload, [ui.column(content)], CARD)
+
+
+## A button that can't be used: barely lifted from the ground, its words dim.
+static func faded(palette: Dictionary) -> Color:
+	return (palette[&"raised"] as Color).lerp(palette[&"ground"], 0.3)
+
+
+static func faded_words(palette: Dictionary) -> Color:
+	return (palette[&"ink_soft"] as Color).lerp(palette[&"ground"], 0.45)
+
+
+## The second accent: the palette's accent_2, or the first accent when it has none.
+static func second_accent(palette: Dictionary) -> Color:
+	return palette.get(&"accent_2", palette[&"accent"])
 
 
 static func _box(fill: Color, corner: int, margin: int) -> StyleBoxFlat:

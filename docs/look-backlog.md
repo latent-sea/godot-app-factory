@@ -4,6 +4,17 @@ The apps' shared look will live in the factory, not in gd-chime (D-004).
 This lists what real use of the Checklist showed it must get right. Each
 entry: what was seen, where, and what "fixed" means.
 
+## Chosen: dark navy glass (27 Sep 2026)
+
+From a reference image you chose: a navy ground, cards a shade lighter with
+thin cool outlines, light words, teal as the main accent (filled pill
+buttons with a soft glow, links, the field being typed in) and violet as the
+second (ticks, changing-line marks). Faded states are worked out from the
+palette, so a disabled button reads as off on any ground. Splash screens and
+icons match. Still to consider: a font of the factory's own, and gd-chime's
+own pieces (the drawer's close button, the radio's chosen bar) that don't
+yet take the accent.
+
 ## Rule: a disabled control just looks faded, with no reason shown
 
 - **Seen:** on a phone, 27 Sep 2026. With nothing ticked, "Clear done" went
