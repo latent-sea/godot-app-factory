@@ -15,7 +15,7 @@ extends RefCounted
 ## counts are left alone. The one exception is a pressable's least size,
 ## which is set to FINGER outright because gd-chime ships it at zero.
 ##
-## A candidate for the factory's services once a second app needs it.
+## Part of the factory's look (look.gd), which applies it last.
 
 ## The canvas's short side, in base pixels (needed_settings.gd's base, upright).
 const CANVAS_SHORT_SIDE := 1080.0

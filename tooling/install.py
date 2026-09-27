@@ -6,8 +6,13 @@
 For each pinned dependency this fetches exactly that commit once into
 .cache/deps/<name>/<commit>/, then replaces the app's copy of the pinned
 folder (for gd-chime, apps/<app>/addons/gd_chime/) with a fresh copy of it.
-Nothing else from the dependency reaches the app. Running it twice changes
-nothing the second time.
+Nothing else from the dependency reaches the app.
+
+Then each factory service the app names in its factory.json ("services":
+["look"]) is copied from services/<name>/ to apps/<app>/addons/factory_<name>/.
+
+Running it twice changes nothing the second time. Every copy is gitignored:
+the pin and services/ are the only sources.
 
 An app is a folder under apps/ holding a factory.json.
 
@@ -132,14 +137,43 @@ def install_into(app: Path, pin: Pin, source: Path) -> None:
     shutil.copytree(source, dest)
 
 
+def read_services(root: Path, app: Path) -> list[str]:
+    """The factory services an app's factory.json names, each checked to exist under services/."""
+    path = app / "factory.json"
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise InstallError(f"{path} is not valid JSON: {e}") from None
+    services = manifest.get("services", [])
+    if not isinstance(services, list) or not all(isinstance(s, str) for s in services):
+        raise InstallError(f"{path}: 'services' must be a list of names")
+    have = sorted(p.name for p in (root / "services").glob("*") if p.is_dir())
+    for name in services:
+        if name not in have:
+            raise InstallError(f"{app.name} asks for service '{name}', but services/ has {', '.join(have) or 'none'}")
+    return services
+
+
+def install_service(root: Path, app: Path, name: str) -> None:
+    """Replace the app's copy of a factory service with a fresh one."""
+    dest = app / "addons" / f"factory_{name}"
+    if dest.exists():
+        shutil.rmtree(dest)
+    shutil.copytree(root / "services" / name, dest, ignore=shutil.ignore_patterns("*.uid", "__pycache__"))
+
+
 def install(root: Path, names: list[str]) -> list[Path]:
     pins = read_pins(root)
     apps = find_apps(root, names)
+    services = {app: read_services(root, app) for app in apps}
     sources = {pin: fetch(root, pin) for pin in pins}
     for app in apps:
         for pin, source in sources.items():
             install_into(app, pin, source)
-        print(f"install: {app.name}: " + ", ".join(f"{p.name} @ {p.commit[:7]}" for p in pins))
+        for name in services[app]:
+            install_service(root, app, name)
+        installed = [f"{p.name} @ {p.commit[:7]}" for p in pins] + [f"factory_{n}" for n in services[app]]
+        print(f"install: {app.name}: " + ", ".join(installed))
     return apps
 
 

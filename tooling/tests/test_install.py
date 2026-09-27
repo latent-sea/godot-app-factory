@@ -29,7 +29,9 @@ def files_under(path: Path) -> dict[str, str]:
     return {p.relative_to(path).as_posix(): p.read_text(encoding="utf-8") for p in sorted(path.rglob("*")) if p.is_file()}
 
 
-class InstallTest(unittest.TestCase):
+class Factory(unittest.TestCase):
+    """A factory with two apps and a pin, beside a local upstream; no tests of its own."""
+
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
         base = Path(self._tmp.name)
@@ -65,6 +67,9 @@ class InstallTest(unittest.TestCase):
         git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "next", cwd=self.upstream)
         return git("rev-parse", "HEAD", cwd=self.upstream)
 
+
+
+class InstallTest(Factory):
     def test_copies_only_the_pinned_folder_into_every_app(self) -> None:
         apps = install.install(self.root, [])
         self.assertEqual([a.name for a in apps], ["alpha", "beta"])
@@ -145,6 +150,41 @@ class InstallTest(unittest.TestCase):
         write(broken / "partial.gd", "cut off\n")  # no completion marker
         install.install(self.root, [])
         self.assertEqual(sorted(files_under(self.root / "apps/alpha/addons/lib")), ["core.gd", "plugin.cfg"])
+
+
+class ServiceTest(Factory):
+    def setUp(self) -> None:
+        super().setUp()
+        write(self.root / "services/look/look.gd", "extends RefCounted\n")
+        write(self.root / "services/look/tests/test_look.gd", "test\n")
+        write(self.root / "services/look/look.gd.uid", "uid://abc\n")
+        write(self.root / "apps/alpha/factory.json", json.dumps({"name": "alpha", "services": ["look"]}))
+
+    def test_named_services_are_copied_as_factory_addons(self) -> None:
+        install.install(self.root, [])
+        self.assertEqual(
+            files_under(self.root / "apps/alpha/addons/factory_look"),
+            {"look.gd": "extends RefCounted\n", "tests/test_look.gd": "test\n"},
+        )
+        self.assertFalse((self.root / "apps/beta/addons/factory_look").exists(), "beta asked for no services")
+
+    def test_a_changed_service_replaces_the_copy(self) -> None:
+        install.install(self.root, [])
+        write(self.root / "apps/alpha/addons/factory_look/stale.gd", "stale\n")
+        write(self.root / "services/look/look.gd", "extends Node\n")
+        install.install(self.root, [])
+        self.assertEqual(sorted(files_under(self.root / "apps/alpha/addons/factory_look")), ["look.gd", "tests/test_look.gd"])
+        self.assertEqual((self.root / "apps/alpha/addons/factory_look/look.gd").read_text(), "extends Node\n")
+
+    def test_an_unknown_service_is_an_error_naming_the_ones_there_are(self) -> None:
+        write(self.root / "apps/alpha/factory.json", json.dumps({"services": ["nope"]}))
+        with self.assertRaisesRegex(install.InstallError, "service 'nope', but services/ has look"):
+            install.install(self.root, [])
+
+    def test_services_must_be_a_list(self) -> None:
+        write(self.root / "apps/alpha/factory.json", json.dumps({"services": "look"}))
+        with self.assertRaisesRegex(install.InstallError, "must be a list"):
+            install.install(self.root, [])
 
 
 class RealPinTest(unittest.TestCase):

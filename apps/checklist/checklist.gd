@@ -8,36 +8,15 @@ extends ChimeApp
 
 const Items := preload("res://items.gd")
 const Walk := preload("res://probe.gd")
-const PhoneLook := preload("res://phone_look.gd")
+const FactoryLook := preload("res://addons/factory_look/look.gd")
 
 const LIST := &"list"
-## The theme type of the page every part of the screen stands on.
-const PAGE := &"ChecklistPage"
-## The theme types of a done item's words, and of the tick boxes.
-const DONE := &"ChecklistDone"
-const TICK := &"ChecklistTick"
-## The theme type of the screen's one button: filled, so it reads as a button.
-const ACTION := &"ChecklistAction"
-## A button with nothing to do: faded grey, nearly white.
-const FADED := Color("#e9edf0")
-const FADED_WORDS := Color("#aab4bd")
 ## The tick boxes, as words so they grow with the look.
 const UNTICKED := "☐"
 const TICKED := "☑"
 const SAVED_AT := "user://checklist.json"
 ## The probe keeps its own file, so walking the app never touches real items.
 const PROBED_AT := "user://checklist_probe.json"
-
-## The app's own look: the factory's teal on a cool, quiet ground.
-const PALETTE := {
-	&"ground": Color("#f3f5f7"),
-	&"raised": Color("#ffffff"),
-	&"lit": Color("#dfe7ec"),
-	&"ink": Color("#17212b"),
-	&"ink_soft": Color("#4a5866"),
-	&"accent": Color("#0e6b70"),
-	&"shade": Color(0.09, 0.13, 0.17, 0.55),
-}
 
 ## Where the items are kept; a test points this at a file of its own.
 var saved_at := SAVED_AT
@@ -46,59 +25,9 @@ var menu: GdChime.OpenMenu
 var saving: GdChime.SettingsFile
 
 
+## The factory's look, as it is: the Checklist asks nothing of its own.
 func look() -> Theme:
-	var theme := GdChime.Themes.new(PALETTE)
-	# The page: the list kept off the glass's edges.
-	theme.set_type_variation(PAGE, &"Control")
-	var page := StyleBoxFlat.new()
-	page.bg_color = PALETTE[&"ground"]
-	page.set_content_margin_all(24)
-	theme.set_stylebox(&"panel", PAGE, page)
-	# The title reads as one, bigger than the items under it.
-	theme.set_font_size(&"font_size", GdChime.Themes.TITLE, 44)
-	# A done item's words and tick, quieter than one still to do.
-	theme.set_type_variation(DONE, GdChime.Themes.FACE)
-	theme.set_color(&"font_color", DONE, PALETTE[&"ink_soft"])
-	theme.set_type_variation(TICK, GdChime.Themes.FACE)
-	theme.set_color(&"font_color", TICK, PALETTE[&"accent"])
-	# The add line: a white field outlined in the quiet ink, in teal while typing.
-	var field := _field_box(PALETTE[&"ink_soft"], 2)
-	theme.set_stylebox(&"normal", GdChime.Fields.FIELD, field)
-	theme.set_stylebox(&"read_only", GdChime.Fields.FIELD, field)
-	theme.set_stylebox(&"focus", GdChime.Fields.FIELD, _field_box(PALETTE[&"accent"], 3))
-	theme.set_color(&"font_color", GdChime.Fields.FIELD, PALETTE[&"ink"])
-	theme.set_color(&"caret_color", GdChime.Fields.FIELD, PALETTE[&"accent"])
-	# Clear done: a filled teal button with white words, darker while pressed,
-	# and faded to nearly white while there is nothing to clear.
-	theme.set_type_variation(ACTION, GdChime.Themes.PRESSABLE)
-	var accent: Color = PALETTE[&"accent"]
-	for state: StringName in [&"normal", &"hover", &"glowing"]:
-		theme.set_stylebox(state, ACTION, _button_box(accent if state == &"normal" else accent.darkened(0.25)))
-		theme.set_color(StringName("font_color_" + state), ACTION, PALETTE[&"raised"])
-	# gd-chime draws a button that can't be used as inert, and flashes refusing when pressed anyway.
-	for state: StringName in [&"inert", &"refusing"]:
-		theme.set_stylebox(state, ACTION, _button_box(FADED))
-		theme.set_color(StringName("font_color_" + state), ACTION, FADED_WORDS)
-	PhoneLook.enlarge(theme, PhoneLook.factor())
-	return theme
-
-
-func _field_box(edge: Color, width: int) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = PALETTE[&"raised"]
-	box.border_color = edge
-	box.set_border_width_all(width)
-	box.set_corner_radius_all(8)
-	box.set_content_margin_all(12)
-	return box
-
-
-func _button_box(fill: Color) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = fill
-	box.set_corner_radius_all(12)
-	box.set_content_margin_all(16)
-	return box
+	return FactoryLook.make()
 
 
 func declare(register: GdChime.Actions) -> void:
@@ -133,11 +62,9 @@ func describe() -> GdChime.Desc:
 		ui.text(counted, GdChime.Themes.REASON),
 		ui.field(Items.ADDS, GdChime.Fields.FIELD).takes_focus(),
 		ui.scroll(rows, null, &"down").grow(),
-		# Words only: no reason under it. A disabled button just looks faded;
-		# its reason printed under it read as a second button on a phone.
-		ui.pressable(Items.CLEARS, {}, [ui.text(ui.words(Items.CLEARS), GdChime.Themes.FACE)], ACTION),
+		FactoryLook.button(ui, Items.CLEARS),
 	])
-	return ui.app(&"checklist", [ui.screen(LIST, [ui.surface(PAGE, [screen])], list)])
+	return ui.app(&"checklist", [ui.screen(LIST, [FactoryLook.page(ui, [screen])], list)])
 
 
 ## One item: its tick box and its words, quieter once done. Tapped, it ticks; swiped left, it is deleted.
@@ -148,8 +75,8 @@ func _row(item: GdChime.Bound) -> GdChime.Desc:
 	var words: GdChime.Bound = item.map(func(one: Variant) -> String: return "" if one == null else one["words"])
 	var sides := {GdChime.SwipeRow.LEFT: {"action": Items.DELETES, "words": GdChime.Phrase.of("Delete"), "state": GdChime.Status.FAULT}}
 	var content := ui.when(done,
-		ui.row([ui.text(TICKED, TICK), ui.text(words, DONE).wraps().grow()]),
-		ui.row([ui.text(UNTICKED, TICK), ui.text(words, GdChime.Themes.FACE).wraps().grow()]))
+		ui.row([ui.text(TICKED, FactoryLook.MARKED), ui.text(words, FactoryLook.QUIET).wraps().grow()]),
+		ui.row([ui.text(UNTICKED, FactoryLook.MARKED), ui.text(words, GdChime.Themes.FACE).wraps().grow()]))
 	return GdChime.SwipeRow.make(ui, Items.TOGGLES, carried, content, {"sides": sides})
 
 

@@ -1,4 +1,5 @@
 {
   "name": "Checklist",
-  "package": "com.latentsea.checklist"
+  "package": "com.latentsea.checklist",
+  "services": ["look"]
 }

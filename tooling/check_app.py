@@ -7,7 +7,9 @@
 Run tooling/install.py first.
 
 A test is a script apps/<app>/tests/test_*.gd that extends SceneTree. It
-prints "PASS <its file name>" once every claim held, and quits 0. The probe
+prints "PASS <its file name>" once every claim held, and quits 0. The tests
+of each factory service the app uses (addons/factory_*/tests/) run too, in
+the app, so a service is checked in every app that wears it. The probe
 is gd-chime's own walk of the app's screens, run as `-- --probe` on the main
 scene, which prints "PROBE OK".
 
@@ -56,13 +58,15 @@ def check(godot_bin: str, app: Path) -> list[str]:
     godot.import_project(godot_bin, app)
     failures = []
     tests = sorted((app / "tests").glob("test_*.gd"))
-    for test in tests:
-        done = godot.run(godot_bin, app, "--script", f"res://tests/{test.name}", timeout=300)
-        problem = verdict(f"{app.name}/tests/{test.name}", done, f"PASS {test.name}")
-        print(f"  {'ok  ' if problem is None else 'FAIL'} tests/{test.name}")
+    service_tests = sorted((app / "addons").glob("factory_*/tests/test_*.gd"))
+    for test in tests + service_tests:
+        where = test.relative_to(app).as_posix()
+        done = godot.run(godot_bin, app, "--script", f"res://{where}", timeout=120)
+        problem = verdict(f"{app.name}/{where}", done, f"PASS {test.name}")
+        print(f"  {'ok  ' if problem is None else 'FAIL'} {where}")
         if problem:
             failures.append(problem)
-    done = godot.run(godot_bin, app, "--", "--probe", timeout=300)
+    done = godot.run(godot_bin, app, "--", "--probe", timeout=120)
     problem = verdict(f"{app.name} probe", done, "PROBE OK")
     print(f"  {'ok  ' if problem is None else 'FAIL'} probe")
     if problem:
