@@ -23,6 +23,9 @@ class Builder extends RefCounted:
 	func pressable(action: StringName, payload: Variant, content: Array, style: Variant) -> GdChime.Desc:
 		return GdChime.Desc.new(&"pressable", {"action": action, "payload": payload, "style": style}, content)
 
+	func column(content: Array, style: Variant = &"Column") -> GdChime.Desc:
+		return GdChime.Desc.new(&"column", {"style": style}, content)
+
 
 func _init() -> void:
 	await process_frame
@@ -42,6 +45,11 @@ func _init() -> void:
 	var focus := theme.get_stylebox(&"focus", GdChime.Fields.FIELD) as StyleBoxFlat
 	_claim(focus != null and focus.border_color == Look.PALETTE[&"accent"], "a field being typed in is outlined in the accent")
 
+	_claim(theme.get_stylebox(&"focus", Look.LINK) is StyleBoxEmpty and theme.get_stylebox(&"focus", Look.CARD) is StyleBoxEmpty, "links and cards draw no focus frame")
+	_claim(theme.get_stylebox(&"normal", Look.LINK) is StyleBoxEmpty, "a link has no box")
+	var card := theme.get_stylebox(&"normal", Look.CARD) as StyleBoxFlat
+	_claim(card != null and card.bg_color == Look.PALETTE[&"raised"] and card.border_color == Look.PALETTE[&"lit"], "a card is white, outlined in the lit colour")
+
 	var own := Look.PALETTE.duplicate()
 	own[&"accent"] = Color("#8a3ffc")
 	var worn := Look.make(own)
@@ -51,6 +59,9 @@ func _init() -> void:
 	var described: GdChime.Desc = Look.button(Builder.new(), &"does_a_thing")
 	var kinds: Array = _kinds(described)
 	_claim(kinds == [&"pressable", &"text"], "a button is its words and no reason line: %s" % [kinds])
+	_claim(_kinds(Look.link(Builder.new(), &"goes")) == [&"pressable", &"text"], "a link is its words and no reason line")
+	_claim(Look.link(Builder.new(), &"goes").props["style"] == Look.LINK, "a link wears the link style")
+	_claim(Look.card(Builder.new(), &"opens", []).props["style"] == Look.CARD, "a card wears the card style")
 
 	for sentence: String in _failed:
 		print("NOT TRUE: %s" % sentence)

@@ -1,0 +1,5 @@
+{
+  "name": "I Ching",
+  "package": "com.latentsea.iching",
+  "services": ["look"]
+}

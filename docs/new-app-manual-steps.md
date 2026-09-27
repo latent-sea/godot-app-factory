@@ -47,3 +47,19 @@ created app on every run).
   rule. Those cases are gd-chime's to test.
 - gd-chime sizes are for a monitor; phones need the look enlarged (D-007).
 - A row template is called once with no item, so every read allows for null.
+- `ChimeApp` also has members named `Prompts` and `prompts` (gd-chime's own
+  guidance prompts): don't use those names in an app.
+- Every model must be in the tree: handed to a screen, or registered with
+  `model()`. A model made but not registered leaks, and its actions only
+  work by accident. A drawer takes no model, so register its model app-wide.
+- Long words wrap only inside a row that lets them grow:
+  `ui.row([ui.text(...).wraps().grow()])`. Otherwise one long line widens
+  every screen in the same stack.
+- gd-chime's NotificationTray reserves room for a 14-letter notice beside
+  its buttons, which is wider than a phone at phone sizes. Say it in place
+  instead (the I Ching's card says "Copied").
+- To move from a model (say, after the sixth tap), dispatch
+  `GdChime.Driver.GO` through the app's `commands`, as gd-chime's own Form does.
+- gd-chime doesn't handle Android's Back button: set
+  `application/config/quit_on_go_back=false` and dispatch `GOES_BACK` from
+  the app's `_notification` (see `apps/iching/iching.gd`).

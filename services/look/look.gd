@@ -11,6 +11,8 @@ extends RefCounted
 ##   QUIET   words that matter less: a done item, a note
 ##   MARKED  words in the accent: a tick, a small mark
 ##   ACTION  a filled button; faded to nearly white while it can't be used
+##   LINK    words in the accent that go somewhere: no box around them
+##   CARD    a white card, softly outlined, pressed as a whole
 ##   Field   a white field outlined, in the accent while typing
 ##
 ## THE RULES, from using the apps on a phone (docs/look-backlog.md):
@@ -30,6 +32,10 @@ const PAGE := &"FactoryPage"
 const QUIET := &"FactoryQuiet"
 const MARKED := &"FactoryMarked"
 const ACTION := &"FactoryAction"
+const LINK := &"FactoryLink"
+const CARD := &"FactoryCard"
+## Every state gd-chime draws a pressable in (face.gd), and its focus.
+const STATES: Array[StringName] = [&"normal", &"hover", &"inert", &"current", &"glowing", &"selected", &"lifted", &"accepting", &"refusing", &"listening"]
 
 ## The factory's palette: teal on a cool, quiet ground. The seven keys are
 ## the ones gd-chime's Themes reads; an app's own palette needs all seven.
@@ -57,6 +63,8 @@ static func make(palette: Dictionary = PALETTE) -> Theme:
 	_words(theme, palette)
 	_field(theme, palette)
 	_action(theme, palette)
+	_link(theme, palette)
+	_card(theme, palette)
 	Phone.enlarge(theme, Phone.factor())
 	return theme
 
@@ -112,6 +120,44 @@ static func _action(theme: Theme, palette: Dictionary) -> void:
 	for state: StringName in [&"inert", &"refusing"]:
 		theme.set_stylebox(state, ACTION, _box(FADED, 12, 16))
 		theme.set_color(StringName("font_color_" + state), ACTION, FADED_WORDS)
+
+
+## Words in the accent with no box. No focus ring: gd-chime puts focus on
+## a screen's first press when it opens, and on a phone the ring reads as a
+## heavy frame round something nobody chose.
+static func _link(theme: Theme, palette: Dictionary) -> void:
+	theme.set_type_variation(LINK, &"Control")
+	var bare := StyleBoxEmpty.new()
+	bare.set_content_margin_all(8)
+	for state: StringName in STATES + [&"focus"]:
+		theme.set_stylebox(state, LINK, bare)
+	for state: StringName in STATES:
+		theme.set_color(StringName("font_color_" + state), LINK, palette[&"accent"])
+	theme.set_color(&"font_color_inert", LINK, FADED_WORDS)
+
+
+## A white card outlined in the lit colour, lit a little while pressed.
+static func _card(theme: Theme, palette: Dictionary) -> void:
+	theme.set_type_variation(CARD, &"Control")
+	var resting := _box(palette[&"raised"], 12, 20)
+	resting.border_color = palette[&"lit"]
+	resting.set_border_width_all(2)
+	var pressed := resting.duplicate() as StyleBoxFlat
+	pressed.bg_color = palette[&"lit"]
+	for state: StringName in STATES:
+		theme.set_stylebox(state, CARD, pressed if state in [&"hover", &"glowing", &"selected", &"accepting"] else resting)
+		theme.set_color(StringName("font_color_" + state), CARD, palette[&"ink"])
+	theme.set_stylebox(&"focus", CARD, StyleBoxEmpty.new())
+
+
+## Words in the accent that act when pressed, with no box: for going somewhere.
+static func link(ui: RefCounted, action: StringName, payload: Variant = {}) -> GdChime.Desc:
+	return ui.pressable(action, payload, [ui.text(ui.words(action), MARKED)], LINK)
+
+
+## A card holding content, pressed as a whole.
+static func card(ui: RefCounted, action: StringName, content: Array, payload: Variant = {}) -> GdChime.Desc:
+	return ui.pressable(action, payload, [ui.column(content)], CARD)
 
 
 static func _box(fill: Color, corner: int, margin: int) -> StyleBoxFlat:
