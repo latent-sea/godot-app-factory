@@ -9,6 +9,7 @@ extends ChimeApp
 ## copying.gd; hexagrams.gd is the arithmetic, drawing.gd the pictures.
 
 const FactoryLook := preload("res://addons/factory_look/look.gd")
+const Basics := preload("res://addons/factory_basics/basics.gd")
 const H := preload("res://hexagrams.gd")
 const Cast := preload("res://cast.gd")
 const PromptList := preload("res://prompts.gd")
@@ -26,16 +27,14 @@ const GOES_TO_PROMPTS := &"goes_to_the_prompts"
 const GOES_BACK := &"goes_back"
 const OPENS_COPY := &"opens_the_copy_drawer"
 
-const SAVED_AT := "user://iching.json"
-## The probe keeps its own file, so walking the app never touches real prompts.
-const PROBED_AT := "user://iching_probe.json"
 ## Base-pixel sizes before phone sizing.
 const HEXAGRAM_HEIGHT := 180
 const SMALL_HEXAGRAM_HEIGHT := 120
 const SQUARE_LEAST := 320
 
-## Where the prompts are kept; a test points this at a file of its own.
-var saved_at := SAVED_AT
+## Where the prompts are kept: user://iching.json, unless a test chooses a
+## file of its own (a probe always has its own - see the basics service).
+var saved_at := ""
 var cast: Cast
 var prompt_list: PromptList
 var copying: Copying
@@ -87,11 +86,8 @@ func describe() -> GdChime.Desc:
 	prompt_list = PromptList.new(chimes, commands, EDIT)
 	# The copy drawer takes no model of its own, so copying answers app-wide.
 	copying = model(Copying.new(chimes, cast, prompt_list))
-	var file := saved_at
-	if OS.get_cmdline_user_args().has(PROBE_SWITCH):
-		file = PROBED_AT
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(PROBED_AT))
-	saving = model(GdChime.SettingsFile.new(chimes, file))
+	Basics.answer_back(self)
+	saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("iching", saved_at)))
 	saving.keep("iching", prompt_list)
 	menu = model(GdChime.OpenMenu.new(chimes, commands, actions))
 	# The prompt rows' menus need this in place before the first row is described.
@@ -99,13 +95,6 @@ func describe() -> GdChime.Desc:
 	var drawer := _copy_drawer()
 	var screens := ui.stack([_cast_screen(), _result_screen(drawer), _prompts_screen(), _edit_screen()])
 	return ui.app(&"iching", [screens])
-
-
-## Android's Back: back a screen, or out of the app from the first.
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_GO_BACK_REQUEST and commands != null:
-		if commands.dispatch(GdChime.Chimes.GLOBAL, GdChime.Driver.GOES_BACK, {}) != null:
-			get_tree().quit()
 
 
 func _cast_screen() -> GdChime.Desc:
