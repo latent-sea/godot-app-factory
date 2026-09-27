@@ -30,7 +30,7 @@ const PIXELS: Array[StringName] = [
 	&"least_width", &"least_height", &"least_column", &"least_track",
 	&"slop", &"compact_below", &"wide_from", &"dead_band",
 	&"line_width", &"marker_radius", &"tick_width", &"outline_width",
-	&"picked_width", &"hatch_gap", &"thick", &"step", &"letters",
+	&"picked_width", &"hatch_gap", &"thick", &"step",
 ]
 ## Stretch the dp count of a phone's short side can be forced to, for a
 ## screenshot on a desktop: `-- --phone-dp=411`.

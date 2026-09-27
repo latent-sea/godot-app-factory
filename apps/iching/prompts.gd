@@ -3,33 +3,44 @@ extends GdChime.Controller
 ## The saved prompts: each {"id": int, "name": String, "text": String}, in the
 ## order they were made. The one place they live; the screens read them.
 ## Kept between runs by gd-chime's SettingsFile, through saved() and restore().
+##
+## ONE PROMPT IS OPEN FOR EDITING at a time, and its name and text change as
+## they are typed. A new prompt starts empty and opens at once; a prompt
+## left with no text when its editor closes is dropped (drop_if_empty).
 ## An id is never reused.
 
 const ADDS := &"adds_a_prompt"
-const SAVES := &"saves_a_prompt"
+const OPENS := &"opens_a_prompt"
+const RENAMES := &"renames_a_prompt"
+const REWRITES := &"rewrites_a_prompt"
 const DELETES := &"deletes_a_prompt"
 
 var prompts := value([])
+## The id of the prompt being edited, or null.
+var editing := value(null)
 var _next_id := 1
+var _door: Object  # the app's commands, to open a new prompt's editor
+var _edit_place: StringName
+
+
+func _init(chimes: GdChime.Chimes, door: Object = null, edit_place: StringName = &"") -> void:
+	super(chimes)
+	_door = door
+	_edit_place = edit_place
 
 
 func answers() -> Array[StringName]:
-	return [ADDS, SAVES, DELETES]
+	return [ADDS, OPENS, RENAMES, REWRITES, DELETES]
 
 
 func would(action: StringName, payload: Dictionary) -> GdChime.Phrase:
 	match action:
-		ADDS:
-			if str(payload.get("text", "")).strip_edges().is_empty():
-				return GdChime.Phrase.of("Write the prompt first")
-		SAVES:
+		OPENS, DELETES:
 			if index_of(payload.get("id")) < 0:
 				return GdChime.Phrase.of("That prompt is gone")
-			if str(payload.get("text", "")).strip_edges().is_empty():
-				return GdChime.Phrase.of("Write the prompt first")
-		DELETES:
-			if index_of(payload.get("id")) < 0:
-				return GdChime.Phrase.of("That prompt is gone")
+		RENAMES, REWRITES:
+			if index_of(editing.read()) < 0:
+				return GdChime.Phrase.of("No prompt is open")
 	return null
 
 
@@ -37,16 +48,46 @@ func told(action: StringName, payload: Dictionary) -> GdChime.Phrase:
 	var list: Array = prompts.read()
 	match action:
 		ADDS:
-			list.append({"id": _next_id, "name": _name_of(payload), "text": str(payload["text"]).strip_edges()})
+			var id := _next_id
 			_next_id += 1
-		SAVES:
-			var one: Dictionary = list[index_of(payload["id"])]
-			one["name"] = _name_of(payload)
-			one["text"] = str(payload["text"]).strip_edges()
+			list.append({"id": id, "name": "", "text": ""})
+			prompts.set_value(list)
+			editing.set_value(id)
+			if _door != null:
+				return _door.dispatch(GdChime.Chimes.GLOBAL, GdChime.Driver.GO, {"place": _edit_place, "parameter": id})
+			return null
+		OPENS:
+			editing.set_value(int(payload["id"]))
+			return null
+		RENAMES:
+			list[index_of(editing.read())]["name"] = str(payload.get("line", ""))
+		REWRITES:
+			list[index_of(editing.read())]["text"] = str(payload.get("text", ""))
 		DELETES:
 			list.remove_at(index_of(payload["id"]))
 	prompts.set_value(list)
 	return null
+
+
+## When the editor closes: the prompt it held is dropped if it has no text.
+func drop_if_empty() -> void:
+	var at := index_of(editing.read())
+	if at >= 0 and str(prompts.read()[at]["text"]).strip_edges().is_empty():
+		var list: Array = prompts.read()
+		list.remove_at(at)
+		prompts.set_value(list)
+	editing.set_value(null)
+
+
+## A prompt's name as shown: as written, or its first words when it has none.
+static func name_of(prompt: Dictionary) -> String:
+	var name := str(prompt.get("name", "")).strip_edges()
+	if not name.is_empty():
+		return name
+	var first_line := str(prompt.get("text", "")).strip_edges().get_slice("\n", 0)
+	if first_line.is_empty():
+		return "New prompt"
+	return first_line if first_line.length() <= 40 else first_line.left(39) + "…"
 
 
 ## The prompt with this id, or {} when there is none.
@@ -65,9 +106,10 @@ func index_of(id: Variant) -> int:
 	return -1
 
 
-## What SettingsFile writes.
+## What SettingsFile writes: prompts with text only.
 func saved() -> Dictionary:
-	return {"prompts": prompts.read().duplicate(true)}
+	var kept: Array = prompts.read().filter(func(one: Dictionary) -> bool: return not str(one["text"]).strip_edges().is_empty())
+	return {"prompts": kept.duplicate(true)}
 
 
 ## What SettingsFile read back. A save of the wrong shape is left unread.
@@ -82,12 +124,3 @@ func restore(save: Dictionary) -> void:
 		back.append({"id": int(kept["id"]), "name": kept["name"], "text": kept["text"]})
 		_next_id = maxi(_next_id, int(kept["id"]) + 1)
 	prompts.set_value(back)
-
-
-## A prompt's name as given, or its first words when none is.
-func _name_of(payload: Dictionary) -> String:
-	var name := str(payload.get("name", "")).strip_edges()
-	if not name.is_empty():
-		return name
-	var first_line := str(payload["text"]).strip_edges().get_slice("\n", 0)
-	return first_line if first_line.length() <= 40 else first_line.left(39) + "…"

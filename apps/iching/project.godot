@@ -9,6 +9,7 @@ config/name="I Ching"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
+config/quit_on_go_back=false
 boot_splash/show_image=false
 boot_splash/bg_color=Color(0.9529412, 0.9607843, 0.96862745, 1)
 

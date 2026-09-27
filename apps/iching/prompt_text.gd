@@ -9,13 +9,14 @@ extends RefCounted
 
 const QUESTION := "question"
 
-static var _placeholder := RegEx.create_from_string("\\{([A-Za-z0-9_]+)\\}")
+## A placeholder as a pattern: made per call, since a static one would outlive the app.
+const PATTERN := "\\{([A-Za-z0-9_]+)\\}"
 
 
 ## The placeholder names in a prompt, each once, in the order they first appear.
 static func placeholders(prompt: String) -> Array:
 	var names: Array = []
-	for found: RegExMatch in _placeholder.search_all(prompt):
+	for found: RegExMatch in RegEx.create_from_string(PATTERN).search_all(prompt):
 		var name := found.get_string(1)
 		if not names.has(name):
 			names.append(name)

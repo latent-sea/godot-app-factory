@@ -19,6 +19,22 @@ entry: what was seen, where, and what "fixed" means.
   and use a visible reason only where a person couldn't otherwise work out
   why something is unavailable.
 
+## Rule: no focus frames on a phone
+
+- **Seen:** in phone renders of the I Ching, 27 Sep 2026. gd-chime puts
+  focus on a screen's first press when it opens and draws a heavy ink ring
+  round it, which reads as a frame round something nobody chose.
+- **Done:** the look's LINK and CARD styles draw no focus frame. Fields keep
+  theirs (the teal outline while typing), since that one means something.
+- **Still open:** gd-chime's own recipes (a drawer's close button) keep the
+  ring; they would need dressing type by type.
+
+## Fixed: a count of letters was treated as a size
+
+- **Seen:** the I Ching's notification tray was 1,500 px wide on a phone.
+- **Cause:** phone sizing multiplied Notice `letters`, a count, as if it were
+  pixels. Counts are now left alone, and a test says so.
+
 ## Carried over from the Checklist
 
 - Phone sizing (`apps/checklist/phone_look.gd`, D-007).

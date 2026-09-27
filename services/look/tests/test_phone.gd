@@ -28,6 +28,9 @@ func _init() -> void:
 	_claim(big.get_constant(&"gap", &"Cells") == roundi(plain.get_constant(&"gap", &"Cells") * 2.5), "a gap grows")
 	_claim(big.get_constant(&"glide", &"Motion") == plain.get_constant(&"glide", &"Motion"), "a duration does not")
 	_claim(big.get_constant(&"swipe_commit", &"Touch") == plain.get_constant(&"swipe_commit", &"Touch"), "a share in thousandths does not")
+	# A count, not a length: a notice's room is measured in letters, which already grow with the font.
+	_claim(big.get_constant(&"letters", &"Notice") == plain.get_constant(&"letters", &"Notice"), "a count of letters does not")
+	_claim(big.get_constant(&"lines", &"Notice") == plain.get_constant(&"lines", &"Notice"), "a count of lines does not")
 	_claim(big.get_constant(&"least", &"Touch") == roundi(PhoneLook.FINGER * 2.5), "a pressable is at least a finger each way")
 	_claim(is_equal_approx(shared.get_content_margin(SIDE_LEFT), 25.0) and shared.get_corner_radius(CORNER_TOP_LEFT) == 10, "a stylebox shared by two types grows once: %s" % shared.get_content_margin(SIDE_LEFT))
 
