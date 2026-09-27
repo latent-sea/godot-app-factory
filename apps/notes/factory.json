@@ -1,0 +1,5 @@
+{
+  "name": "Notes",
+  "package": "com.latentsea.notes",
+  "services": ["look", "basics", "testkit"]
+}

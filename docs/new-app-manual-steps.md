@@ -64,3 +64,11 @@ created app on every run).
   `GdChime.Driver.GO` through the app's `commands`, as gd-chime's own Form does.
 - gd-chime doesn't handle Android's Back button: the basics service does
   (`Basics.answer_back(self)`), with `config/quit_on_go_back=false`.
+- A press inks every word on it in its own state's colour, so a quieter
+  style (`QUIET`) inside a row or card does nothing. Say "matters less" with
+  a smaller size instead (the Notes list does this).
+- A screen's first focusable control takes the focus when it opens. If that
+  is a field, a phone raises its keyboard: put a link before it (the Notes
+  list's "New note" is in the title row for this reason).
+- A pressable's style can be a bound value (`Bound` reading a type name),
+  which is how a chosen tag chip changes look.

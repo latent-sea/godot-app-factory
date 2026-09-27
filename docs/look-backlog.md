@@ -62,3 +62,19 @@ yet take the accent.
 - The palette, page margins, title size, tick boxes, add field and the
   filled button with its faded disabled state
   (`apps/checklist/checklist.gd`, `look()`).
+
+## Fixed: links stayed faded after they could be used
+
+- **Seen:** in Notes phone renders, 27 Sep 2026. The editor's "‹ Notes",
+  Pin and Copy were drawn faded though they worked. The I Ching's Back had
+  the same fault.
+- **Cause:** gd-chime re-inks a press's words only when its box changes,
+  and every LINK state shared one empty box. A link built while it could
+  not be used (a screen's Back before the screen shows) kept its faded ink.
+- **Done:** the faded states have a box of their own, and a test says so.
+
+## Rule: a press has one ink
+
+- A pressable inks every word on it alike, so words that matter less on a
+  card or row are made smaller, not quieter. The Checklist's ticked items
+  are marked by the tick for the same reason.
