@@ -78,3 +78,13 @@ yet take the accent.
 - A pressable inks every word on it alike, so words that matter less on a
   card or row are made smaller, not quieter. The Checklist's ticked items
   are marked by the tick for the same reason.
+
+## Added: a loading screen
+
+- **Asked:** 27 Sep 2026, "Latensea Productions" and a loading animation
+  when an app opens, instead of a blank screen.
+- **Done:** `FactoryLook.splash(self)` in describe(). It shows the name and a
+  teal-to-violet wave on the navy ground for 1.6 s, then fades to the app
+  (`services/look/splash.gd`). Godot's own boot splash stays plain navy, so
+  the phone goes navy, then the name and wave, then the app. A probe gets
+  no splash.

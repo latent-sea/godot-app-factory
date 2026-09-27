@@ -28,6 +28,7 @@ extends RefCounted
 
 const Phone := preload("phone.gd")
 const GradientPill := preload("gradient_pill.gd")
+const Splash := preload("splash.gd")
 ## Manrope, a geometric sans (SIL Open Font License, fonts/OFL.txt), in its variable form.
 const FONT := preload("fonts/Manrope.ttf")
 ## Its weights: words, and titles.
@@ -81,6 +82,12 @@ static func make(palette: Dictionary = PALETTE) -> Theme:
 	_scroll_bars(theme)
 	Phone.enlarge(theme, Phone.factor())
 	return theme
+
+
+## The loading screen over the app as it opens: the name and a wave, then
+## the app (splash.gd). Call once, in describe().
+static func splash(app: Node, palette: Dictionary = PALETTE) -> CanvasLayer:
+	return Splash.over(app, palette, weighted(TITLE_WEIGHT), weighted(WEIGHT))
 
 
 ## A screen's content on the page: margins from the glass, the ground behind.

@@ -24,6 +24,8 @@ func declare(_register: GdChime.Actions) -> void:
 
 
 func describe() -> GdChime.Desc:
+	# The loading screen: the name and a wave, then the app.
+	FactoryLook.splash(self)
 	# Android's Back goes back a screen, or out from the first. For saved
 	# data: model(GdChime.SettingsFile.new(chimes, Basics.save_file("{{name}}")))
 	Basics.answer_back(self)
