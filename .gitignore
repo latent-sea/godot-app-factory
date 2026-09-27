@@ -1,0 +1,9 @@
+# Filled by tooling/install.py from dependencies.json; never edited by hand.
+/apps/*/addons/gd_chime/
+# Fetched dependencies, keyed by commit.
+/.cache/
+# Godot's per-project import cache.
+/apps/*/.godot/
+# Exports.
+/build/
+__pycache__/
