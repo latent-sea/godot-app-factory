@@ -22,7 +22,9 @@ created app on every run).
 | A starter test and probe that pass | Written by hand | `create_app.py` |
 | A look | In the app | The factory's look service (`services/look`) |
 | An icon | Drawn by hand | A placeholder from `create_app.py`; **still by hand** |
-| Test helpers (frames, finding pressables, a finger swipe) | Copied from gd-chime's patterns | **Still by hand**: a candidate service once a second real app repeats them |
+| Test helpers (frames, finding pressables, taps, a finger swipe, the report) | Copied from gd-chime's patterns, then repeated in the I Ching | The testkit service: a probe writes only its own claims |
+| Android's Back button | Written into the I Ching by hand | The basics service; `create_app.py` wires it in |
+| Where saved data lives, and the probe's own file | Repeated in both apps | The basics service |
 | Picked up by CI, gd-chime installed, debug APK, QR link | Automatic | Automatic |
 
 ## Once, for the factory
@@ -60,6 +62,5 @@ created app on every run).
   instead (the I Ching's card says "Copied").
 - To move from a model (say, after the sixth tap), dispatch
   `GdChime.Driver.GO` through the app's `commands`, as gd-chime's own Form does.
-- gd-chime doesn't handle Android's Back button: set
-  `application/config/quit_on_go_back=false` and dispatch `GOES_BACK` from
-  the app's `_notification` (see `apps/iching/iching.gd`).
+- gd-chime doesn't handle Android's Back button: the basics service does
+  (`Basics.answer_back(self)`), with `config/quit_on_go_back=false`.

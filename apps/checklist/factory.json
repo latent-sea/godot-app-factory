@@ -1,5 +1,5 @@
 {
   "name": "Checklist",
   "package": "com.latentsea.checklist",
-  "services": ["look"]
+  "services": ["look", "basics", "testkit"]
 }

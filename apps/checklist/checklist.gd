@@ -9,17 +9,15 @@ extends ChimeApp
 const Items := preload("res://items.gd")
 const Walk := preload("res://probe.gd")
 const FactoryLook := preload("res://addons/factory_look/look.gd")
+const Basics := preload("res://addons/factory_basics/basics.gd")
 
 const LIST := &"list"
 ## The tick boxes, as words so they grow with the look.
 const UNTICKED := "☐"
 const TICKED := "☑"
-const SAVED_AT := "user://checklist.json"
-## The probe keeps its own file, so walking the app never touches real items.
-const PROBED_AT := "user://checklist_probe.json"
-
-## Where the items are kept; a test points this at a file of its own.
-var saved_at := SAVED_AT
+## Where the items are kept: user://checklist.json, unless a test chooses a
+## file of its own (a probe always has its own - see the basics service).
+var saved_at := ""
 var list: Items
 var menu: GdChime.OpenMenu
 var saving: GdChime.SettingsFile
@@ -43,11 +41,8 @@ func declare(register: GdChime.Actions) -> void:
 
 func describe() -> GdChime.Desc:
 	list = Items.new(chimes)
-	var file := saved_at
-	if OS.get_cmdline_user_args().has(PROBE_SWITCH):
-		file = PROBED_AT
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(PROBED_AT))
-	saving = model(GdChime.SettingsFile.new(chimes, file))
+	Basics.answer_back(self)
+	saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("checklist", saved_at)))
 	saving.keep("checklist", list)
 	menu = model(GdChime.OpenMenu.new(chimes, commands, actions))
 	# The rows' menus need this in place before the first row is described.

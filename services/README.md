@@ -13,5 +13,7 @@ installs it (`tooling/check_app.py`).
 | Service | What it is |
 | --- | --- |
 | [look](look/look.gd) | The apps' Theme: gd-chime's, dressed and sized for phones (D-004, D-007) |
+| [basics](basics/basics.gd) | Android's Back button, and where an app's data is saved (a probe always gets its own file) |
+| [testkit](testkit/walk.gd) | What a probe is made of: presses, taps, swipes, reading the screen, claims and the PROBE OK report |
 
 A service is made when a second app needs the same thing, never before.
