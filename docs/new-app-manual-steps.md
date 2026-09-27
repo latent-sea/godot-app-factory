@@ -10,6 +10,7 @@ repeating lines are what step 8 of the plan automates.
 | --- | --- | --- |
 | Create `apps/<name>/` with `factory.json` (name, package id) | By hand | `create_app.py <name>` |
 | `project.godot`: gd-chime's three settings, the plugin, the Mobile renderer, ETC2/ASTC textures, orientation, icon | Copied from gd-chime's `checks/installed/project.godot` and edited | Generated from `factory.json` |
+| No Godot splash: `boot_splash/show_image=false` and the splash colour set to the app's ground | By hand, after seeing Godot's logo on the phone | Generated from the look's ground colour |
 | `main.tscn` whose root is the app script, typed `SubViewportContainer` (a `ChimeApp` is one; `Control` fails) | By hand, after a failed run | Generated |
 | `export_presets.cfg`: Android, arm64, package id and name, version, `tests/*` left out of the export | By hand | Generated from `factory.json` |
 | An icon | Drawn by hand as `icon.svg` | Later: from one image |
