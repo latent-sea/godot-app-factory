@@ -1,0 +1,130 @@
+# Checks every app, then builds each one's debug APK.
+#
+# The same tools run locally: tooling/install.py, tooling/check_app.py,
+# tooling/export_android.py. Godot's version comes from dependencies.json.
+
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      godot: ${{ steps.pins.outputs.godot }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read pins
+        id: pins
+        run: echo "godot=$(python3 -c "import json; print(json.load(open('dependencies.json'))['godot']['version'])")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Godot
+        id: godot-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/godot
+          key: godot-${{ steps.pins.outputs.godot }}-linux
+
+      - name: Download Godot
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        env:
+          VERSION: ${{ steps.pins.outputs.godot }}
+        run: |
+          mkdir -p ~/godot
+          curl -fsSL -o /tmp/godot.zip "https://github.com/godotengine/godot/releases/download/${VERSION}/Godot_v${VERSION}_linux.x86_64.zip"
+          unzip -q /tmp/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${VERSION}_linux.x86_64 ~/godot/godot
+
+      - name: Tooling tests
+        run: python3 -m unittest discover -s tooling/tests -v
+
+      - name: Install dependencies
+        run: python3 tooling/install.py
+
+      - name: Check apps
+        run: python3 tooling/check_app.py --godot ~/godot/godot
+
+      # A new app must pass its checks as create_app makes it, with no hand edits.
+      - name: Check a freshly created app
+        run: |
+          python3 tooling/create_app.py ci_scratch
+          python3 tooling/install.py ci_scratch
+          python3 tooling/check_app.py ci_scratch --godot ~/godot/godot
+
+  android:
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write  # to publish the debug-latest pre-release
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Cache Godot and Android templates
+        id: godot-cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ needs.check.outputs.godot }}-linux-android
+
+      - name: Download Godot and Android templates
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        env:
+          VERSION: ${{ needs.check.outputs.godot }}
+        run: |
+          mkdir -p ~/godot
+          base="https://github.com/godotengine/godot/releases/download/${VERSION}"
+          curl -fsSL -o /tmp/godot.zip "${base}/Godot_v${VERSION}_linux.x86_64.zip"
+          unzip -q /tmp/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${VERSION}_linux.x86_64 ~/godot/godot
+          # Only the Android templates: the full set is several times larger.
+          templates=~/.local/share/godot/export_templates/${VERSION/-/.}
+          mkdir -p "$templates"
+          curl -fsSL -o /tmp/templates.tpz "${base}/Godot_v${VERSION}_export_templates.tpz"
+          unzip -jq /tmp/templates.tpz 'templates/android_*' 'templates/version.txt' -d "$templates"
+          rm /tmp/templates.tpz
+
+      - name: Install dependencies
+        run: python3 tooling/install.py
+
+      - name: Export debug APKs
+        # ANDROID_HOME and JDK 17 come with the runner image.
+        run: JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME}" python3 tooling/export_android.py --godot ~/godot/godot
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v7
+        with:
+          name: debug-apks
+          path: build/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      # A fixed link a phone can open without signing in:
+      # https://github.com/<repo>/releases/download/debug-latest/<app>-debug.apk
+      - name: Publish to the debug-latest pre-release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=debug-latest
+          notes="Debug builds from ${GITHUB_SHA::7} on ${GITHUB_REF_NAME}, $(date -u '+%Y-%m-%d %H:%M UTC'). Signed with the shared debug key: install by sideloading; not for the Play Store."
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --prerelease --title "Debug builds" --notes "$notes" --target "$GITHUB_SHA"
+          fi
+          gh release upload "$tag" build/*.apk --clobber
+          gh release edit "$tag" --notes "$notes"

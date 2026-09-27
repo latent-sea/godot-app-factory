@@ -1,0 +1,938 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>Godot App Factory Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --ground: #f3f5f7;
+    --surface: #ffffff;
+    --sunk: #e8ecf0;
+    --ink: #17212b;
+    --ink-soft: #4a5866;
+    --line: #c9d2db;
+    --accent: #0e6b70;
+    --accent-soft: #d5ebec;
+    --auto: #2f7d4f;
+    --auto-soft: #dcefe2;
+    --manual: #a86a12;
+    --manual-soft: #f6e8cf;
+    --later: #6a7683;
+    --later-soft: #e3e7eb;
+    --warn: #b0452d;
+    --warn-soft: #f6dfd8;
+    --display: "Schibsted Grotesk", "Segoe UI", system-ui, sans-serif;
+    --body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #121a21;
+      --surface: #1a242d;
+      --sunk: #222e39;
+      --ink: #e6edf2;
+      --ink-soft: #a3b1bd;
+      --line: #354553;
+      --accent: #5cc2c7;
+      --accent-soft: #173b3f;
+      --auto: #6cc48f;
+      --auto-soft: #1b3526;
+      --manual: #e0a64e;
+      --manual-soft: #3a2c15;
+      --later: #9aa7b3;
+      --later-soft: #28323c;
+      --warn: #ec8a72;
+      --warn-soft: #3d231d;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #121a21;
+    --surface: #1a242d;
+    --sunk: #222e39;
+    --ink: #e6edf2;
+    --ink-soft: #a3b1bd;
+    --line: #354553;
+    --accent: #5cc2c7;
+    --accent-soft: #173b3f;
+    --auto: #6cc48f;
+    --auto-soft: #1b3526;
+    --manual: #e0a64e;
+    --manual-soft: #3a2c15;
+    --later: #9aa7b3;
+    --later-soft: #28323c;
+    --warn: #ec8a72;
+    --warn-soft: #3d231d;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.6 var(--body);
+    padding-inline: 16px;
+    padding-block: 0 64px;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  .prose { max-width: 68ch; }
+
+  header.top { padding-block: 48px 32px; border-bottom: 1px solid var(--line); }
+  .eyebrow {
+    font: 600 12px/1 var(--mono);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 800 clamp(34px, 6vw, 54px)/1.05 var(--display);
+    letter-spacing: -.02em;
+    margin: 14px 0 16px;
+    text-wrap: balance;
+  }
+  .lede { font-size: 19px; color: var(--ink-soft); max-width: 60ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 22px; font: 13px/1.4 var(--mono); color: var(--ink-soft); }
+  .meta b { color: var(--ink); font-weight: 600; }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 6px; padding-block: 18px; border-bottom: 1px solid var(--line); }
+  nav.toc a {
+    font: 600 13px/1 var(--body);
+    color: var(--ink-soft);
+    text-decoration: none;
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: var(--sunk);
+  }
+  nav.toc a:hover, nav.toc a:focus-visible { background: var(--accent-soft); color: var(--accent); outline: none; }
+
+  section { padding-block: 44px 8px; }
+  h2 {
+    font: 700 28px/1.15 var(--display);
+    letter-spacing: -.01em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  h3 { font: 700 18px/1.3 var(--display); margin: 0 0 6px; }
+  .sub { color: var(--ink-soft); margin: 0 0 22px; max-width: 68ch; }
+  p { margin: 0 0 14px; }
+  code, .mono { font-family: var(--mono); font-size: .88em; }
+  code { background: var(--sunk); padding: 1px 5px; border-radius: 4px; }
+  a { color: var(--accent); }
+
+  /* decisions at a glance */
+  .glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .glance div { background: var(--surface); padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+  .glance dt { font: 600 11px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+  .glance dd { margin: 0; font: 600 16px/1.35 var(--body); }
+  .glance dd small { display: block; font-weight: 400; font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+
+  /* figures */
+  figure { margin: 0 0 12px; }
+  .fig {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+    overflow-x: auto;
+  }
+  figcaption { font-size: 13px; color: var(--ink-soft); margin-top: 8px; max-width: 80ch; }
+  svg { display: block; width: 100%; height: auto; }
+  svg text { font-family: var(--body); fill: var(--ink); }
+  svg .t-mono { font-family: var(--mono); }
+  svg .t-soft { fill: var(--ink-soft); }
+  svg .t-accent { fill: var(--accent); }
+  svg .t-auto { fill: var(--auto); }
+  svg .t-manual { fill: var(--manual); }
+  svg .t-warn { fill: var(--warn); }
+  svg .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+  svg .box-sunk { fill: var(--sunk); stroke: var(--line); stroke-width: 1.5; }
+  svg .box-accent { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+  svg .box-auto { fill: var(--auto-soft); stroke: var(--auto); stroke-width: 1.5; }
+  svg .box-manual { fill: var(--manual-soft); stroke: var(--manual); stroke-width: 1.5; }
+  svg .box-later { fill: var(--later-soft); stroke: var(--later); stroke-width: 1.5; stroke-dasharray: 5 4; }
+  svg .arrow { stroke: var(--ink-soft); stroke-width: 1.8; fill: none; }
+  svg .arrow-accent { stroke: var(--accent); stroke-width: 2; fill: none; }
+  svg .arrow-warn { stroke: var(--warn); stroke-width: 2; fill: none; stroke-dasharray: 6 5; }
+  svg .head { fill: var(--ink-soft); }
+  svg .head-accent { fill: var(--accent); }
+  svg .head-warn { fill: var(--warn); }
+  svg .band { fill: var(--sunk); }
+  svg .phone { fill: var(--ink); }
+  svg .screen { fill: var(--surface); }
+  svg .rule { stroke: var(--line); stroke-width: 1; }
+  svg .tick-on { fill: var(--accent); }
+  svg .tick-off { fill: none; stroke: var(--ink-soft); stroke-width: 1.6; }
+  svg .fab { fill: var(--accent); }
+  svg .on-accent { fill: var(--surface); }
+
+  /* repo tree */
+  .tree {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 20px;
+    font: 13.5px/1.75 var(--mono);
+    overflow-x: auto;
+    white-space: pre;
+    margin: 0;
+  }
+  .tree .d { color: var(--accent); font-weight: 600; }
+  .tree .c { color: var(--ink-soft); }
+  .tree .g { color: var(--manual); }
+  .two { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  @media (max-width: 760px) { .two { grid-template-columns: minmax(0, 1fr); } }
+
+  /* chips */
+  .chip {
+    display: inline-block;
+    font: 600 11px/1 var(--mono);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 5px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .chip.done { background: var(--auto-soft); color: var(--auto); }
+  .chip.next { background: var(--accent-soft); color: var(--accent); }
+  .chip.later { background: var(--later-soft); color: var(--later); }
+  .chip.auto { background: var(--auto-soft); color: var(--auto); }
+  .chip.manual { background: var(--manual-soft); color: var(--manual); }
+  .chip.none { background: var(--later-soft); color: var(--later); }
+  .chip.you { background: var(--manual-soft); color: var(--manual); }
+  .chip.me { background: var(--sunk); color: var(--ink-soft); }
+
+  /* steps */
+  ol.steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; }
+  ol.steps li {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 0 16px;
+    position: relative;
+    padding-bottom: 22px;
+  }
+  ol.steps li::before {
+    content: "";
+    position: absolute;
+    left: 21px; top: 44px; bottom: 0;
+    width: 2px;
+    background: var(--line);
+  }
+  ol.steps li:last-child::before { display: none; }
+  .num {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font: 700 16px/1 var(--display);
+    background: var(--surface);
+    border: 2px solid var(--line);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  li.is-done .num { background: var(--auto); border-color: var(--auto); color: var(--surface); }
+  li.is-next .num { border-color: var(--accent); color: var(--accent); }
+  .step-body { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; }
+  li.is-next .step-body { border-color: var(--accent); }
+  .step-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 6px; }
+  .step-head h3 { margin: 0; margin-right: auto; }
+  .step-body p { margin: 0 0 8px; color: var(--ink-soft); }
+  .step-body p:last-child { margin-bottom: 0; }
+  .doneby { font-size: 14px; }
+  .doneby b { color: var(--ink); font-weight: 600; }
+
+  /* tables */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  th { font: 600 11px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); background: var(--sunk); }
+  td.nowrap { white-space: nowrap; }
+
+  /* decisions */
+  .decisions { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; }
+  .decision { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+  .decision .id { font: 600 12px/1 var(--mono); color: var(--accent); }
+  .decision h3 { margin: 0; }
+  .decision p { margin: 0; font-size: 14.5px; color: var(--ink-soft); }
+  .decision .rethink { font-size: 13.5px; border-top: 1px dashed var(--line); padding-top: 8px; margin-top: auto; }
+  .decision .rethink b { color: var(--ink); font-weight: 600; }
+
+  /* risks */
+  .risk { display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px 14px 14px; }
+  .risk + .risk { margin-top: 10px; }
+  .risk .bar { border-radius: 4px; }
+  .risk.high .bar { background: var(--warn); }
+  .risk.med .bar { background: var(--manual); }
+  .risk.low .bar { background: var(--later); }
+  .risk h3 { font-size: 16px; margin-bottom: 4px; }
+  .risk p { margin: 0; font-size: 14.5px; color: var(--ink-soft); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--ink-soft); margin-bottom: 14px; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .legend .l-high::before { background: var(--warn); }
+  .legend .l-med::before { background: var(--manual); }
+  .legend .l-low::before { background: var(--later); }
+
+  .ask { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 10px; padding: 18px 20px; }
+  .ask h3 { color: var(--accent); }
+  .ask ul { margin: 8px 0 0; padding-left: 20px; }
+  .ask li + li { margin-top: 8px; }
+
+  footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-soft); }
+
+  @media (max-width: 520px) {
+    body { font-size: 15.5px; }
+    .lede { font-size: 17px; }
+    ol.steps li { grid-template-columns: 34px minmax(0, 1fr); gap: 0 12px; }
+    .num { width: 34px; height: 34px; font-size: 14px; }
+    ol.steps li::before { left: 16px; top: 34px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    nav.toc a { transition: background .15s, color .15s; }
+  }
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Milestone 1 · plan for review</div>
+  <h1>From an idea to a phone, once, end to end</h1>
+  <p class="lede">The first milestone proves the whole path with one small real app: a <b>Checklist</b> built on gd-chime, produced by the factory, exported by CI as a debug APK you install on your phone. Each step below also leaves behind something the next app reuses.</p>
+  <div class="meta">
+    <span>Repo <b>latent-sea/godot-app-factory</b></span>
+    <span>Branch <b>claude/bold-ramanujan-sr7wmi</b></span>
+    <span>Engine <b>Godot 4.6</b></span>
+    <span>gd-chime pin <b>1f5e9a6</b></span>
+    <span>27 Sep 2026</span>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <a href="#decided">Decided</a>
+  <a href="#path">The path</a>
+  <a href="#layout">Repository</a>
+  <a href="#deps">Dependencies</a>
+  <a href="#gdchime">gd-chime arrival</a>
+  <a href="#app">Checklist app</a>
+  <a href="#ci">Build pipeline</a>
+  <a href="#steps">Steps</a>
+  <a href="#manual">Manual vs automated</a>
+  <a href="#records">Decision records</a>
+  <a href="#risks">Risks</a>
+  <a href="#you">Needed from you</a>
+</nav>
+
+<!-- ============================================================ -->
+<section id="decided">
+  <h2>What we decided</h2>
+  <p class="sub">Settled in our Q&amp;A. Each of these becomes a short decision record in <code>docs/decisions/</code>.</p>
+  <dl class="glance">
+    <div><dt>Engine</dt><dd>Godot 4.6<small>The version gd-chime targets</small></dd></div>
+    <div><dt>gd-chime source</dt><dd>Public mirror, pinned commit<small>latent-sea/gd-chime, synced automatically</small></dd></div>
+    <div><dt>Project shape</dt><dd>One Godot project per app<small>apps/&lt;name&gt;/project.godot</small></dd></div>
+    <div><dt>Install step</dt><dd>One script, per app<small>Copies gd-chime and factory services into addons/</small></dd></div>
+    <div><dt>First app</dt><dd>Checklist<small>com.latentsea.checklist</small></dd></div>
+    <div><dt>Persistence</dt><dd>Inside the app, for now<small>JSON in user://; extracted when app #2 needs it</small></dd></div>
+    <div><dt>Look</dt><dd>The app's own palette<small>Built with gd-chime's exported Themes</small></dd></div>
+    <div><dt>Release bar</dt><dd>Debug APK, sideloaded<small>Built in GitHub Actions</small></dd></div>
+  </dl>
+</section>
+
+<!-- ============================================================ -->
+<section id="path">
+  <h2>The path this milestone proves</h2>
+  <p class="sub">The README's goal, drawn as the concrete thing each stage produces for the Checklist.</p>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 940 150" role="img" aria-label="Six stages from idea to installable app" style="min-width:760px">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker>
+        </defs>
+        <g>
+          <rect class="box" x="4" y="28" width="132" height="76" rx="8"/>
+          <text x="70" y="58" text-anchor="middle" font-weight="700" font-size="15">Idea</text>
+          <text x="70" y="80" text-anchor="middle" class="t-soft" font-size="12">a checklist</text>
+
+          <rect class="box" x="164" y="28" width="132" height="76" rx="8"/>
+          <text x="230" y="58" text-anchor="middle" font-weight="700" font-size="15">New app</text>
+          <text x="230" y="80" text-anchor="middle" class="t-soft t-mono" font-size="11">apps/checklist/</text>
+
+          <rect class="box" x="324" y="28" width="132" height="76" rx="8"/>
+          <text x="390" y="58" text-anchor="middle" font-weight="700" font-size="15">gd-chime UI</text>
+          <text x="390" y="80" text-anchor="middle" class="t-soft" font-size="12">ChimeApp + look</text>
+
+          <rect class="box" x="484" y="28" width="132" height="76" rx="8"/>
+          <text x="550" y="58" text-anchor="middle" font-weight="700" font-size="15">Factory</text>
+          <text x="550" y="80" text-anchor="middle" class="t-soft" font-size="12">install · CI · export</text>
+
+          <rect class="box" x="644" y="28" width="132" height="76" rx="8"/>
+          <text x="710" y="58" text-anchor="middle" font-weight="700" font-size="15">Android build</text>
+          <text x="710" y="80" text-anchor="middle" class="t-soft t-mono" font-size="11">checklist-debug.apk</text>
+
+          <rect class="box-accent" x="804" y="28" width="132" height="76" rx="8"/>
+          <text x="870" y="58" text-anchor="middle" font-weight="700" font-size="15" class="t-accent">On your phone</text>
+          <text x="870" y="80" text-anchor="middle" class="t-soft" font-size="12">installed, used</text>
+
+          <path class="arrow" d="M137 66 H160" marker-end="url(#ah)"/>
+          <path class="arrow" d="M297 66 H320" marker-end="url(#ah)"/>
+          <path class="arrow" d="M457 66 H480" marker-end="url(#ah)"/>
+          <path class="arrow" d="M617 66 H640" marker-end="url(#ah)"/>
+          <path class="arrow" d="M777 66 H800" marker-end="url(#ah)"/>
+
+          <text x="470" y="136" text-anchor="middle" class="t-soft" font-size="12">Everything left of the phone runs from a clean checkout, with no files from anyone's machine.</text>
+        </g>
+      </svg>
+    </div>
+  </figure>
+</section>
+
+<!-- ============================================================ -->
+<section id="layout">
+  <h2>Repository layout after milestone 1</h2>
+  <p class="sub">Only folders that milestone 1 actually needs. <code>services/</code> and <code>platform/</code> appear once a second app gives them a job.</p>
+  <div class="two">
+<pre class="tree" aria-label="Folder tree"><span class="d">godot-app-factory/</span>
+├── README.md
+├── <b>dependencies.json</b>        <span class="c"># gd-chime: repo + pinned commit</span>
+├── <span class="d">apps/</span>
+│   └── <span class="d">checklist/</span>
+│       ├── project.godot
+│       ├── export_presets.cfg
+│       ├── factory.json      <span class="c"># name, package id, services</span>
+│       ├── main.tscn         <span class="c"># root is a ChimeApp</span>
+│       ├── checklist.gd
+│       ├── <span class="d">model/</span>           <span class="c"># items + JSON store</span>
+│       ├── <span class="d">tests/</span>
+│       └── <span class="g">addons/</span>          <span class="c"># filled by install, gitignored</span>
+├── <span class="d">tooling/</span>
+│   ├── install.py           <span class="c"># fetch pin → copy into apps</span>
+│   ├── <span class="d">android/</span>             <span class="c"># debug keystore, export notes</span>
+│   └── <span class="d">tests/</span>
+├── <span class="d">docs/</span>
+│   ├── plan.html            <span class="c"># this page</span>
+│   └── <span class="d">decisions/</span>
+└── <span class="d">.github/workflows/</span>
+    └── ci.yml               <span class="c"># check → build APK</span></pre>
+    <div class="prose">
+      <h3>Why it looks like this</h3>
+      <p><b>Each app is a complete Godot project.</b> You can open <code>apps/checklist</code> in the editor on its own, and it exports with its own package ID and icon. An AI session working on one app never touches another.</p>
+      <p><b><code>addons/</code> is filled, never committed.</b> <code>install.py</code> puts the pinned gd-chime there, and later the factory's own services too. Deleting the folder and running install again gives the same result, which keeps copies from drifting apart.</p>
+      <p><b>No central registry.</b> CI finds apps by listing <code>apps/*/factory.json</code>, so adding an app doesn't mean editing a shared file.</p>
+      <p><b><span style="color:var(--manual)">Amber</span> marks generated content</b> that you never edit by hand.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="deps">
+  <h2>Which way dependencies point</h2>
+  <p class="sub">Arrows mean "depends on". Nothing points back up. gd-chime stays outside the factory and never learns it exists.</p>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 760 330" role="img" aria-label="Dependency direction diagram" style="min-width:600px">
+        <defs>
+          <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker>
+          <marker id="ahw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head-warn"/></marker>
+        </defs>
+
+        <!-- factory boundary -->
+        <rect x="10" y="10" width="440" height="262" rx="12" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <text x="26" y="34" class="t-soft t-mono" font-size="11">godot-app-factory</text>
+
+        <!-- apps -->
+        <rect class="box-accent" x="40" y="50" width="170" height="58" rx="8"/>
+        <text x="125" y="75" text-anchor="middle" font-weight="700" font-size="14" class="t-accent">apps/checklist</text>
+        <text x="125" y="94" text-anchor="middle" class="t-soft" font-size="11.5">product behaviour</text>
+
+        <rect class="box-later" x="250" y="50" width="170" height="58" rx="8"/>
+        <text x="335" y="75" text-anchor="middle" font-weight="700" font-size="14" class="t-soft">apps/next-app</text>
+        <text x="335" y="94" text-anchor="middle" class="t-soft" font-size="11.5">later</text>
+
+        <!-- services -->
+        <rect class="box-later" x="40" y="136" width="380" height="50" rx="8"/>
+        <text x="230" y="158" text-anchor="middle" font-weight="700" font-size="14" class="t-soft">services/…</text>
+        <text x="230" y="176" text-anchor="middle" class="t-soft" font-size="11.5">only when two apps need the same thing</text>
+
+        <!-- platform -->
+        <rect class="box-later" x="40" y="206" width="380" height="50" rx="8"/>
+        <text x="230" y="228" text-anchor="middle" font-weight="700" font-size="14" class="t-soft">platform/android</text>
+        <text x="230" y="246" text-anchor="middle" class="t-soft" font-size="11.5">billing, notifications… when needed</text>
+
+        <!-- gd-chime -->
+        <rect class="box" x="560" y="60" width="180" height="120" rx="10"/>
+        <text x="650" y="92" text-anchor="middle" font-weight="700" font-size="15">gd-chime</text>
+        <text x="650" y="112" text-anchor="middle" class="t-soft" font-size="11.5">UI and application model</text>
+        <text x="650" y="132" text-anchor="middle" class="t-soft t-mono" font-size="11">ChimeApp · GdChime.*</text>
+        <text x="650" y="158" text-anchor="middle" class="t-soft t-mono" font-size="11">latent-sea/gd-chime</text>
+
+        <!-- engine band -->
+        <rect class="band" x="10" y="290" width="740" height="32" rx="8"/>
+        <text x="380" y="311" text-anchor="middle" font-weight="700" font-size="13">Godot 4.6</text>
+
+        <!-- arrows: app -> services (dashed later), app -> gd-chime -->
+        <path class="arrow" d="M125 109 V132" marker-end="url(#ah2)"/>
+        <path class="arrow" d="M335 109 V132" marker-end="url(#ah2)"/>
+        <path class="arrow" d="M230 187 V202" marker-end="url(#ah2)"/>
+        <path class="arrow" d="M211 72 C 380 30, 480 70, 556 96" marker-end="url(#ah2)"/>
+        <path class="arrow" d="M421 90 C 470 100, 510 110, 556 118" marker-end="url(#ah2)"/>
+
+        <!-- forbidden arrow -->
+        <path class="arrow-warn" d="M600 182 C 580 240, 480 250, 424 235" marker-end="url(#ahw)"/>
+        <text x="610" y="232" class="t-warn" font-size="12" font-weight="600">never</text>
+        <text x="610" y="248" class="t-soft" font-size="11.5">gd-chime must not</text>
+        <text x="610" y="262" class="t-soft" font-size="11.5">depend on the factory</text>
+      </svg>
+    </div>
+    <figcaption>Solid boxes exist in milestone 1. Dashed boxes are where later capabilities go, and they're only created when a real app needs them.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ -->
+<section id="gdchime">
+  <h2>How gd-chime reaches an app</h2>
+  <p class="sub">The first link is already live. You approved the mirror, and its first sync is <code>1f5e9a6</code>.</p>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 960 200" role="img" aria-label="gd-chime from monorepo to app" style="min-width:820px">
+        <defs>
+          <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head-accent"/></marker>
+        </defs>
+        <rect class="box-sunk" x="4" y="40" width="170" height="86" rx="8"/>
+        <text x="89" y="66" text-anchor="middle" font-weight="700" font-size="13.5">latent-productions</text>
+        <text x="89" y="86" text-anchor="middle" class="t-soft" font-size="11.5">private monorepo</text>
+        <text x="89" y="106" text-anchor="middle" class="t-soft" font-size="11.5">where gd-chime is written</text>
+
+        <rect class="box-auto" x="200" y="40" width="160" height="86" rx="8"/>
+        <text x="280" y="66" text-anchor="middle" font-weight="700" font-size="13.5" class="t-auto">mirror Action</text>
+        <text x="280" y="86" text-anchor="middle" class="t-soft" font-size="11.5">on push to main</text>
+        <text x="280" y="106" text-anchor="middle" class="t-soft" font-size="11.5">snapshot commit</text>
+
+        <rect class="box" x="386" y="40" width="160" height="86" rx="8"/>
+        <text x="466" y="66" text-anchor="middle" font-weight="700" font-size="13.5">gd-chime</text>
+        <text x="466" y="86" text-anchor="middle" class="t-soft" font-size="11.5">public mirror</text>
+        <text x="466" y="106" text-anchor="middle" class="t-soft t-mono" font-size="11">main @ 1f5e9a6</text>
+
+        <rect class="box-accent" x="572" y="40" width="170" height="86" rx="8"/>
+        <text x="657" y="66" text-anchor="middle" font-weight="700" font-size="13.5" class="t-accent">dependencies.json</text>
+        <text x="657" y="86" text-anchor="middle" class="t-soft" font-size="11.5">the pin, committed</text>
+        <text x="657" y="106" text-anchor="middle" class="t-soft" font-size="11.5">moved on purpose</text>
+
+        <rect class="box-manual" x="768" y="40" width="188" height="86" rx="8"/>
+        <text x="862" y="66" text-anchor="middle" font-weight="700" font-size="13" class="t-manual">apps/*/addons/gd_chime</text>
+        <text x="862" y="86" text-anchor="middle" class="t-soft" font-size="11.5">copied by install.py</text>
+        <text x="862" y="106" text-anchor="middle" class="t-soft" font-size="11.5">gitignored</text>
+
+        <path class="arrow-accent" d="M175 83 H196" marker-end="url(#ah3)"/>
+        <path class="arrow-accent" d="M361 83 H382" marker-end="url(#ah3)"/>
+        <path class="arrow-accent" d="M547 83 H568" marker-end="url(#ah3)"/>
+        <path class="arrow-accent" d="M743 83 H764" marker-end="url(#ah3)"/>
+
+        <line class="rule" x1="4" y1="150" x2="956" y2="150"/>
+        <text x="89" y="176" text-anchor="middle" class="t-soft" font-size="11.5">you write gd-chime</text>
+        <text x="280" y="176" text-anchor="middle" class="t-auto" font-size="11.5" font-weight="600">automatic · live</text>
+        <text x="466" y="176" text-anchor="middle" class="t-soft" font-size="11.5">anyone can read it</text>
+        <text x="657" y="176" text-anchor="middle" class="t-soft" font-size="11.5">upgrade = change one line</text>
+        <text x="862" y="176" text-anchor="middle" class="t-soft" font-size="11.5">same result every run</text>
+      </svg>
+    </div>
+  </figure>
+  <div class="two">
+    <div class="prose">
+      <h3>The pin</h3>
+      <p>One small file at the root lists each outside dependency with an exact commit. To upgrade gd-chime, you change that commit, CI runs, and the change goes in only if it passes.</p>
+      <p><code>install.py</code> fetches that exact commit with git, keeps a copy in <code>.cache/</code>, and copies <b>only</b> <code>addons/gd_chime/</code> into each app. gd-chime's demos, tests and checks stay out. Apps use only what gd-chime's facade exports, as its constitution requires.</p>
+    </div>
+<pre class="tree" aria-label="dependencies.json example">{
+  <span class="d">"gd_chime"</span>: {
+    "repo":   "https://github.com/latent-sea/gd-chime",
+    "commit": "1f5e9a6…",
+    "copy":   "addons/gd_chime"
+  }
+}</pre>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="app">
+  <h2>The Checklist app</h2>
+  <p class="sub">Deliberately small. The point is the path, but it's still a real app that stays on your phone and keeps what you put in it.</p>
+  <div class="two">
+    <figure>
+      <div class="fig" style="display:flex;justify-content:center">
+        <svg viewBox="0 0 260 470" role="img" aria-label="Sketch of the Checklist screen" style="max-width:260px">
+          <rect class="phone" x="4" y="4" width="252" height="462" rx="34"/>
+          <rect class="screen" x="14" y="16" width="232" height="438" rx="26"/>
+          <text x="34" y="62" style="font-family:var(--display)" font-weight="800" font-size="22">Checklist</text>
+          <text x="34" y="82" class="t-soft" font-size="11.5">2 of 5 done</text>
+
+          <rect x="30" y="98" width="200" height="36" rx="8" fill="var(--sunk)" stroke="var(--line)"/>
+          <text x="44" y="121" class="t-soft" font-size="12.5">Add an item…</text>
+
+          <g font-size="13.5">
+            <line class="rule" x1="30" y1="150" x2="230" y2="150"/>
+            <rect class="tick-off" x="34" y="164" width="18" height="18" rx="4"/>
+            <text x="64" y="178">Buy tape</text>
+            <line class="rule" x1="30" y1="196" x2="230" y2="196"/>
+            <rect class="tick-off" x="34" y="210" width="18" height="18" rx="4"/>
+            <text x="64" y="224">Call the landlord</text>
+            <line class="rule" x1="30" y1="242" x2="230" y2="242"/>
+            <rect class="tick-off" x="34" y="256" width="18" height="18" rx="4"/>
+            <text x="64" y="270">Pack the kitchen</text>
+            <line class="rule" x1="30" y1="288" x2="230" y2="288"/>
+            <rect class="tick-on" x="34" y="302" width="18" height="18" rx="4"/>
+            <path d="M38 311 l4 4 l7 -8" stroke="var(--surface)" stroke-width="2.2" fill="none"/>
+            <text x="64" y="316" class="t-soft" text-decoration="line-through">Book the van</text>
+            <line class="rule" x1="30" y1="334" x2="230" y2="334"/>
+            <rect class="tick-on" x="34" y="348" width="18" height="18" rx="4"/>
+            <path d="M38 357 l4 4 l7 -8" stroke="var(--surface)" stroke-width="2.2" fill="none"/>
+            <text x="64" y="362" class="t-soft" text-decoration="line-through">Order boxes</text>
+            <line class="rule" x1="30" y1="380" x2="230" y2="380"/>
+          </g>
+          <rect x="30" y="400" width="200" height="36" rx="18" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+          <text x="130" y="423" text-anchor="middle" class="t-accent" font-size="12.5" font-weight="600">Clear 2 done</text>
+        </svg>
+      </div>
+      <figcaption>A sketch of the layout, not the final look. The real colours come from the app's own palette through gd-chime's Themes.</figcaption>
+    </figure>
+    <div class="prose">
+      <h3>What it does</h3>
+      <table>
+        <tbody>
+          <tr><td class="nowrap"><b>Add</b></td><td>Type in the field and press Enter (gd-chime's <code>field</code>).</td></tr>
+          <tr><td class="nowrap"><b>Tick</b></td><td>Tap a row to mark it done, or tap again to undo.</td></tr>
+          <tr><td class="nowrap"><b>Delete</b></td><td>Swipe a row, or use its menu (<code>SwipeRow</code>). You're never forced to swipe.</td></tr>
+          <tr><td class="nowrap"><b>Clear done</b></td><td>Removes all ticked items at once. It's refused, with a reason, when nothing is ticked.</td></tr>
+          <tr><td class="nowrap"><b>Keep</b></td><td>Saved to <code>user://checklist.json</code> after every change and loaded at start.</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:14px">Out of scope for milestone 1: multiple lists, reminders, sync, sharing and settings.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px">How it's built</h3>
+  <p class="sub">gd-chime's own rules: a model holds each fact, a press is a command sent to the model, and the screen only draws.</p>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 900 250" role="img" aria-label="Checklist architecture" style="min-width:720px">
+        <defs>
+          <marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker>
+          <marker id="ah4a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head-accent"/></marker>
+        </defs>
+
+        <rect class="box" x="10" y="30" width="230" height="170" rx="10"/>
+        <text x="30" y="58" font-weight="700" font-size="14">checklist.gd</text>
+        <text x="30" y="76" class="t-soft t-mono" font-size="11">extends ChimeApp</text>
+        <text x="30" y="104" class="t-mono" font-size="11.5">look()</text>
+        <text x="100" y="104" class="t-soft" font-size="11.5">own palette</text>
+        <text x="30" y="126" class="t-mono" font-size="11.5">declare()</text>
+        <text x="100" y="126" class="t-soft" font-size="11.5">4 actions + keys</text>
+        <text x="30" y="148" class="t-mono" font-size="11.5">describe()</text>
+        <text x="100" y="148" class="t-soft" font-size="11.5">one screen</text>
+        <text x="30" y="170" class="t-mono" font-size="11.5">probe()</text>
+        <text x="100" y="170" class="t-soft" font-size="11.5">self-test walk</text>
+
+        <rect class="box-accent" x="330" y="30" width="240" height="170" rx="10"/>
+        <text x="350" y="58" font-weight="700" font-size="14" class="t-accent">ChecklistItems</text>
+        <text x="350" y="76" class="t-soft t-mono" font-size="11">extends GdChime.Controller</text>
+        <text x="350" y="104" class="t-soft" font-size="11.5">holds the items (one fact, one place)</text>
+        <text x="350" y="126" class="t-mono" font-size="11.5">told()</text>
+        <text x="410" y="126" class="t-soft" font-size="11.5">add · tick · delete · clear</text>
+        <text x="350" y="148" class="t-mono" font-size="11.5">would()</text>
+        <text x="410" y="148" class="t-soft" font-size="11.5">refuses with a reason</text>
+        <text x="350" y="176" class="t-soft" font-size="11.5">rings its bell when anything changes</text>
+
+        <rect class="box" x="660" y="30" width="230" height="170" rx="10"/>
+        <text x="680" y="58" font-weight="700" font-size="14">ItemStore</text>
+        <text x="680" y="76" class="t-soft t-mono" font-size="11">plain GDScript, no UI</text>
+        <text x="680" y="104" class="t-soft" font-size="11.5">load() / save(items)</text>
+        <text x="680" y="126" class="t-mono" font-size="11.5">user://checklist.json</text>
+        <text x="680" y="148" class="t-soft" font-size="11.5">versioned format</text>
+        <text x="680" y="170" class="t-soft" font-size="11.5">bad file → empty list + note</text>
+
+        <path class="arrow" d="M241 92 H326" marker-end="url(#ah4)"/>
+        <text x="283" y="84" text-anchor="middle" class="t-soft" font-size="11">makes</text>
+        <path class="arrow" d="M571 115 H656" marker-end="url(#ah4)"/>
+        <text x="613" y="107" text-anchor="middle" class="t-soft" font-size="11">saves via</text>
+
+        <path class="arrow-accent" d="M450 201 C 450 236, 125 236, 125 204" marker-end="url(#ah4a)"/>
+        <text x="288" y="244" text-anchor="middle" class="t-accent" font-size="11.5" font-weight="600">bell: the screen reads the items again and redraws</text>
+      </svg>
+    </div>
+    <figcaption>Tests cover <b>ItemStore</b> (save and load round trip, a missing or broken file) and <b>ChecklistItems</b> (every action, every refusal) without drawing anything. gd-chime's <code>--probe</code> walks the real screen headless in CI.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ -->
+<section id="ci">
+  <h2>Build pipeline</h2>
+  <p class="sub">One workflow, <code>.github/workflows/ci.yml</code>, runs on every push to the branch and on pull requests. It checks first and builds second.</p>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 960 250" role="img" aria-label="CI pipeline" style="min-width:820px">
+        <defs>
+          <marker id="ah5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker>
+        </defs>
+        <rect class="box-sunk" x="4" y="80" width="110" height="60" rx="8"/>
+        <text x="59" y="106" text-anchor="middle" font-weight="700" font-size="13.5">git push</text>
+        <text x="59" y="124" text-anchor="middle" class="t-soft" font-size="11">or a PR</text>
+
+        <!-- job check -->
+        <rect class="box" x="146" y="14" width="380" height="192" rx="10"/>
+        <text x="164" y="40" font-weight="700" font-size="14">Job 1 · check</text>
+        <text x="508" y="40" text-anchor="end" class="t-soft t-mono" font-size="11">~3 min</text>
+        <g font-size="12.5">
+          <rect class="box-auto" x="164" y="54" width="344" height="26" rx="6"/>
+          <text x="176" y="72">Godot 4.6 headless (cached)</text>
+          <rect class="box-auto" x="164" y="86" width="344" height="26" rx="6"/>
+          <text x="176" y="104">tooling tests + <tspan class="t-mono" font-size="11.5">install.py</tspan> for each app</text>
+          <rect class="box-auto" x="164" y="118" width="344" height="26" rx="6"/>
+          <text x="176" y="136">import project · app unit tests</text>
+          <rect class="box-auto" x="164" y="150" width="344" height="26" rx="6"/>
+          <text x="176" y="168"><tspan class="t-mono" font-size="11.5">--probe</tspan> walks every screen → PROBE OK</text>
+        </g>
+        <text x="164" y="196" class="t-soft" font-size="11">Fails fast. No APK is built from red code.</text>
+
+        <!-- job android -->
+        <rect class="box" x="560" y="14" width="250" height="192" rx="10"/>
+        <text x="578" y="40" font-weight="700" font-size="14">Job 2 · android</text>
+        <g font-size="12.5">
+          <rect class="box-auto" x="578" y="54" width="214" height="26" rx="6"/>
+          <text x="590" y="72">export templates (cached)</text>
+          <rect class="box-auto" x="578" y="86" width="214" height="26" rx="6"/>
+          <text x="590" y="104">JDK 17 + Android SDK</text>
+          <rect class="box-auto" x="578" y="118" width="214" height="26" rx="6"/>
+          <text x="590" y="136">debug keystore</text>
+          <rect class="box-auto" x="578" y="150" width="214" height="26" rx="6"/>
+          <text x="590" y="168">export APK per app</text>
+        </g>
+        <text x="578" y="196" class="t-soft" font-size="11">Runs only after check passes.</text>
+
+        <!-- artifact -->
+        <rect class="box-accent" x="842" y="70" width="114" height="80" rx="8"/>
+        <text x="899" y="98" text-anchor="middle" font-weight="700" font-size="12.5" class="t-accent">APK artifact</text>
+        <text x="899" y="116" text-anchor="middle" class="t-soft t-mono" font-size="10">checklist-</text>
+        <text x="899" y="130" text-anchor="middle" class="t-soft t-mono" font-size="10">debug.apk</text>
+
+        <path class="arrow" d="M115 110 H142" marker-end="url(#ah5)"/>
+        <path class="arrow" d="M527 110 H556" marker-end="url(#ah5)"/>
+        <path class="arrow" d="M811 110 H838" marker-end="url(#ah5)"/>
+
+        <text x="480" y="236" text-anchor="middle" class="t-soft" font-size="12">Download from the run's page → open on your phone → install</text>
+      </svg>
+    </div>
+    <figcaption>Runners are pinned to <code>ubuntu-24.04</code> rather than <code>ubuntu-latest</code>, which moves to Ubuntu 26 on 19 October. Actions use their Node 24 versions (for example <code>actions/checkout@v5</code>), which clears the warning you saw on the mirror run.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ -->
+<section id="steps">
+  <h2>The steps, in order</h2>
+  <p class="sub">Each step ends with something you can check. The order matters: every step builds on the one before it.</p>
+
+  <ol class="steps">
+    <li class="is-done">
+      <div class="num">0</div>
+      <div class="step-body">
+        <div class="step-head"><h3>Publish gd-chime as a public mirror</h3><span class="chip done">Done</span></div>
+        <p>The monorepo's mirror Action publishes snapshot commits to <code>latent-sea/gd-chime</code>. The first sync is <code>1f5e9a6</code>, readable without logging in.</p>
+      </div>
+    </li>
+    <li class="is-next">
+      <div class="num">1</div>
+      <div class="step-body">
+        <div class="step-head"><h3>Pin and install gd-chime</h3><span class="chip next">Next</span><span class="chip me">Claude</span></div>
+        <p><code>dependencies.json</code> plus <code>tooling/install.py</code>, written in Python using only its standard library. It fetches the pinned commit, caches it, and copies <code>addons/gd_chime</code> into each app. Tests check that running it twice gives the same result, that nothing outside <code>addons/</code> is copied, and that a bad pin gives a clear error.</p>
+        <p class="doneby"><b>Done when:</b> on a clean checkout, <code>python tooling/install.py</code> runs, and running it again changes nothing.</p>
+      </div>
+    </li>
+    <li>
+      <div class="num">2</div>
+      <div class="step-body">
+        <div class="step-head"><h3>Checklist app skeleton</h3><span class="chip later">Planned</span><span class="chip me">Claude</span></div>
+        <p><code>apps/checklist/</code> gets a Godot 4.6 project using the Mobile renderer and gd-chime's three required settings. The root node is a <code>ChimeApp</code> with its own palette. <code>factory.json</code> holds the name and package ID.</p>
+        <p class="doneby"><b>Done when:</b> it opens in the editor with no errors, and <code>--probe</code> prints <code>PROBE OK</code> headless.</p>
+      </div>
+    </li>
+    <li>
+      <div class="num">3</div>
+      <div class="step-body">
+        <div class="step-head"><h3>Checklist behaviour and saving</h3><span class="chip later">Planned</span><span class="chip me">Claude</span></div>
+        <p>Add, tick, delete and clear done, with saving to <code>user://</code>. There are unit tests for the model and the store, and the probe walks every action.</p>
+        <p class="doneby"><b>Done when:</b> all tests pass, and items survive quitting and reopening on desktop.</p>
+      </div>
+    </li>
+    <li>
+      <div class="num">4</div>
+      <div class="step-body">
+        <div class="step-head"><h3>CI: the check job</h3><span class="chip later">Planned</span><span class="chip me">Claude</span></div>
+        <p>The workflow installs Godot 4.6, runs the tooling tests, runs install, imports the app, runs the unit tests and runs the probe. It finds apps by listing <code>apps/*/factory.json</code>.</p>
+        <p class="doneby"><b>Done when:</b> it's green on GitHub, and breaking a test on purpose turns it red.</p>
+      </div>
+    </li>
+    <li>
+      <div class="num">5</div>
+      <div class="step-body">
+        <div class="step-head"><h3>CI: debug APK</h3><span class="chip later">Planned</span><span class="chip me">Claude</span></div>
+        <p>An export preset for <code>com.latentsea.checklist</code> (arm64), a shared debug keystore, and a second job that exports the APK and attaches it to the run.</p>
+        <p class="doneby"><b>Done when:</b> every green run has a <code>checklist-debug.apk</code> to download.</p>
+      </div>
+    </li>
+    <li>
+      <div class="num">6</div>
+      <div class="step-body">
+        <div class="step-head"><h3>Install it on your phone</h3><span class="chip later">Planned</span><span class="chip you">You</span></div>
+        <p>Download the APK, allow installs from this source, and install. I'll give you a short list of things to try: add, tick, swipe, rotate, close and reopen. This is the first time gd-chime runs on a real phone.</p>
+        <p class="doneby"><b>Done when:</b> it installs, works, and your items are still there after you restart the app.</p>
+      </div>
+    </li>
+    <li>
+      <div class="num">7</div>
+      <div class="step-body">
+        <div class="step-head"><h3>Write down what was manual</h3><span class="chip later">Planned</span><span class="chip me">Claude</span></div>
+        <p>A short list of every hand step it took to make this app, and how long each took. That list is what shapes step 8.</p>
+      </div>
+    </li>
+    <li>
+      <div class="num">8</div>
+      <div class="step-body">
+        <div class="step-head"><h3>Automate the most valuable repeats</h3><span class="chip later">Planned</span><span class="chip me">Claude</span></div>
+        <p>Probably a <code>tooling/create_app.py &lt;name&gt;</code> that creates a new app's project, <code>factory.json</code> and export preset. The exact list comes from step 7.</p>
+        <p class="doneby"><b>Done when:</b> one command creates a second app that builds an APK in CI with no hand edits.</p>
+      </div>
+    </li>
+    <li>
+      <div class="num">9</div>
+      <div class="step-body">
+        <div class="step-head"><h3>Choose the next shared capability</h3><span class="chip later">Planned</span><span class="chip you">You</span><span class="chip me">Claude</span></div>
+        <p>Decided from what actually repeated, not guessed in advance. Local persistence is the likely first candidate for <code>services/</code>.</p>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<section id="manual">
+  <h2>Manual vs automated, for each new app</h2>
+  <p class="sub">The README's test is that the next app should be cheaper to build than the last. This table tracks that.</p>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Task for a new app</th><th>After step 5</th><th>After step 8</th><th>Later</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Get gd-chime at a known version</td><td><span class="chip auto">Automatic</span></td><td><span class="chip auto">Automatic</span></td><td></td></tr>
+        <tr><td>Create the Godot project and required settings</td><td><span class="chip manual">By hand</span></td><td><span class="chip auto">create_app</span></td><td></td></tr>
+        <tr><td>App name and package ID</td><td><span class="chip manual">By hand</span></td><td><span class="chip auto">factory.json</span></td><td></td></tr>
+        <tr><td>Android export preset</td><td><span class="chip manual">Copied</span></td><td><span class="chip auto">Generated</span></td><td></td></tr>
+        <tr><td>Added to CI</td><td><span class="chip auto">Found automatically</span></td><td><span class="chip auto">Found automatically</span></td><td></td></tr>
+        <tr><td>Tests and probe in CI</td><td><span class="chip auto">Automatic</span></td><td><span class="chip auto">Automatic</span></td><td></td></tr>
+        <tr><td>Debug APK</td><td><span class="chip auto">Automatic</span></td><td><span class="chip auto">Automatic</span></td><td></td></tr>
+        <tr><td>Icon and splash</td><td><span class="chip manual">By hand</span></td><td><span class="chip manual">By hand</span></td><td><span class="chip none">From one image</span></td></tr>
+        <tr><td>Release signing and versioning</td><td><span class="chip none">Not yet</span></td><td><span class="chip none">Not yet</span></td><td><span class="chip none">Milestone 2</span></td></tr>
+        <tr><td>Play Store upload</td><td><span class="chip none">Not yet</span></td><td><span class="chip none">Not yet</span></td><td><span class="chip none">Milestone 2+</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="records">
+  <h2>Decision records</h2>
+  <p class="sub">Written to <code>docs/decisions/</code>, each a few paragraphs long. Each card ends with what would make us reconsider.</p>
+  <div class="decisions">
+    <article class="decision">
+      <span class="id">D-001</span>
+      <h3>gd-chime comes from a pinned commit of a public mirror</h3>
+      <p>The mirror publishes snapshots, so no monorepo history leaks. The factory's pin makes every build reproducible, and upgrades happen on purpose.</p>
+      <p class="rethink"><b>Reconsider if</b> gd-chime moves to its own repo, or starts publishing tagged releases.</p>
+    </article>
+    <article class="decision">
+      <span class="id">D-002</span>
+      <h3>One Godot project per app</h3>
+      <p>Each app has its own export identity, icon and settings, and parallel AI sessions don't conflict. The cost is one copy of the addons per app, which is gitignored and cheap.</p>
+      <p class="rethink"><b>Reconsider if</b> apps start needing to share scenes at runtime.</p>
+    </article>
+    <article class="decision">
+      <span class="id">D-003</span>
+      <h3>Persistence stays in the app until a second app needs it</h3>
+      <p>We build real behaviour first and extract the shared part afterwards, as the README says: prove abstractions through applications.</p>
+      <p class="rethink"><b>Reconsider when</b> a second app needs local saving, which is likely.</p>
+    </article>
+    <article class="decision">
+      <span class="id">D-004</span>
+      <h3>Apps define their own look through gd-chime's exported Themes</h3>
+      <p>gd-chime's material look lives in its demo folder, which isn't part of its public API. The app builds a palette through <code>GdChime.Themes</code> and doesn't copy demo code.</p>
+      <p class="rethink"><b>Reconsider if</b> gd-chime starts shipping ready-made looks in the addon.</p>
+    </article>
+    <article class="decision">
+      <span class="id">D-005</span>
+      <h3>Milestone 1 ships debug APKs, with a shared debug key in the repo</h3>
+      <p>A debug key can't publish anything, and keeping one fixed means each new APK installs over the last without an uninstall. Release keys will never go in the repo.</p>
+      <p class="rethink"><b>Reconsider at</b> milestone 2, when release signing arrives.</p>
+    </article>
+    <article class="decision">
+      <span class="id">D-006</span>
+      <h3>Factory tooling is Python 3, standard library only</h3>
+      <p>It runs on Windows, in CI and in cloud sessions, with nothing to install through pip. The alternative is GDScript tools run by headless Godot.</p>
+      <p class="rethink"><b>Reconsider if</b> you'd rather not install Python on Windows. See the question at the end.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="risks">
+  <h2>Risks</h2>
+  <p class="sub">What could go wrong, and when we'll find out.</p>
+  <div class="legend"><span class="l-high">Could block the milestone</span><span class="l-med">Could cost time</span><span class="l-low">Minor</span></div>
+
+  <div class="risk high"><div class="bar"></div><div>
+    <h3>gd-chime hasn't run on a real phone yet</h3>
+    <p>gd-chime expects a 1920×1080 base with stretch disabled, and its mobile demo only runs in a phone-shaped desktop window. Text or touch targets could come out the wrong size on a real screen. <b>We find out at step 6.</b> If it's broken, the fix probably belongs in gd-chime rather than here, and I'll bring it to you first.</p>
+  </div></div>
+  <div class="risk med"><div class="bar"></div><div>
+    <h3>gd-chime is tested on Forward+, but phones need the Mobile renderer</h3>
+    <p>gd-chime's projects declare Forward+. The Checklist will use Mobile, which is the right choice for Android. <b>We find out at step 2,</b> because the probe runs under Mobile from the start.</p>
+  </div></div>
+  <div class="risk med"><div class="bar"></div><div>
+    <h3>Heavy CI downloads</h3>
+    <p>Godot export templates are large. Caching them by version keeps runs fast after the first.</p>
+  </div></div>
+  <div class="risk low"><div class="bar"></div><div>
+    <h3>The mirror falls behind the monorepo</h3>
+    <p>This is intended. Apps only see gd-chime changes when the pin moves, so nothing changes under them unexpectedly.</p>
+  </div></div>
+  <div class="risk low"><div class="bar"></div><div>
+    <h3>Runner image changes</h3>
+    <p><code>ubuntu-latest</code> moves to Ubuntu 26 on 19 October. CI pins <code>ubuntu-24.04</code>.</p>
+  </div></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="you">
+  <h2>Needed from you</h2>
+  <div class="ask">
+    <h3>To start</h3>
+    <ul>
+      <li><b>Approve this plan</b>, or tell me what to change. Nothing in the factory gets built until you do.</li>
+      <li><b>Is Python OK for the tooling (D-006)?</b> On Windows it's a one-time install from python.org or the Microsoft Store. If you'd rather not install anything, the tools can be GDScript run by Godot instead.</li>
+    </ul>
+    <h3 style="margin-top:16px">Later</h3>
+    <ul>
+      <li><b>Step 6:</b> install the APK on an Android phone and try the checklist. I'll walk you through it one step at a time.</li>
+      <li><b>Step 9:</b> help choose the next shared capability.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  Plan for milestone 1 of godot-app-factory. It's based on the factory README and on gd-chime's README, constitution and vocabulary at the mirror's first sync (1f5e9a6).
+</footer>
+
+</div>
+
+</body>
+</html>
