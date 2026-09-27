@@ -75,6 +75,9 @@ static func enlarge(theme: Theme, by: float) -> void:
 
 
 static func _enlarge_box(box: StyleBox, by: float) -> void:
+	# A style box of the factory's own (gradient_pill.gd) knows its own sizes.
+	if box.has_method(&"enlarge"):
+		box.enlarge(by)
 	for side: int in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
 		var margin := box.get_content_margin(side)
 		if margin > 0.0:

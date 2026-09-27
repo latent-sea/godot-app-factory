@@ -11,9 +11,19 @@ thin cool outlines, light words, teal as the main accent (filled pill
 buttons with a soft glow, links, the field being typed in) and violet as the
 second (ticks, changing-line marks). Faded states are worked out from the
 palette, so a disabled button reads as off on any ground. Splash screens and
-icons match. Still to consider: a font of the factory's own, and gd-chime's
-own pieces (the drawer's close button, the radio's chosen bar) that don't
+icons match. Added after: filled buttons are a teal-to-cyan gradient with a soft glow
+(`services/look/gradient_pill.gd`, since Godot's own boxes can't round a
+gradient), and every word is in Manrope (SIL Open Font License), titles
+bolder. Still to consider: gd-chime's own pieces (the drawer's close button, the radio's chosen bar) that don't
 yet take the accent.
+
+## Fixed: unequal side margins on lists
+
+- **Seen:** on the phone, 27 Sep 2026: the margins either side weren't equal.
+- **Cause:** gd-chime's scroll always reserves room for a vertical scroll
+  bar, so list rows stopped short on the right.
+- **Fixed:** the look gives scroll bars no size; lists are swiped, as on any
+  phone. Measured in a render: 63 px either side.
 
 ## Rule: a disabled control just looks faded, with no reason shown
 

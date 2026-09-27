@@ -35,8 +35,22 @@ func _init() -> void:
 	_claim(theme.get_color(&"font_color", Look.QUIET) == Look.PALETTE[&"ink_soft"], "quiet words are in the soft ink")
 	_claim(theme.get_color(&"font_color", Look.MARKED) == Look.PALETTE[&"accent_2"], "marked words are in the second accent")
 
-	var usable := theme.get_stylebox(&"normal", Look.ACTION) as StyleBoxFlat
-	_claim(usable != null and usable.bg_color == Look.PALETTE[&"accent"], "a usable button is filled with the accent")
+	var usable := theme.get_stylebox(&"normal", Look.ACTION)
+	_claim(usable is Look.GradientPill and usable.from_color == Look.PALETTE[&"accent"] and usable.to_color == Look.PALETTE[&"accent_end"], "a usable button is a gradient from the accent to its end")
+	_claim(theme.default_font is FontVariation and (theme.default_font as FontVariation).base_font == Look.FONT, "every word is in the factory's font")
+	_claim(theme.get_font(&"font", GdChime.Themes.TITLE) != theme.default_font, "titles have a font of their own, bolder")
+	var bar_track := theme.get_stylebox(&"scroll", &"VScrollBar")
+	_claim(bar_track is StyleBoxEmpty and bar_track.get_minimum_size().x == 0.0, "scroll bars take no room")
+	var pill := Look.GradientPill.new()
+	pill.radius = 10.0
+	pill.glow_size = 4.0
+	pill.enlarge(2.5)
+	_claim(is_equal_approx(pill.radius, 25.0) and is_equal_approx(pill.glow_size, 10.0), "a gradient pill grows with phone sizing")
+	var shape: PackedVector2Array = Look.GradientPill.outline(Rect2(0, 0, 200, 60), 100.0)
+	var inside := shape.size() > 0
+	for point: Vector2 in shape:
+		inside = inside and point.x >= -0.01 and point.x <= 200.01 and point.y >= -0.01 and point.y <= 60.01
+	_claim(inside, "a pill's outline stays inside its box, its radius capped at half its height")
 	for state: StringName in [&"inert", &"refusing"]:
 		var faded := theme.get_stylebox(state, Look.ACTION) as StyleBoxFlat
 		_claim(faded != null and faded.bg_color == Look.faded(Look.PALETTE), "a button that can't be used is faded while %s" % state)
@@ -61,7 +75,10 @@ func _init() -> void:
 	var own := Look.PALETTE.duplicate()
 	own[&"accent"] = Color("#8a3ffc")
 	var worn := Look.make(own)
-	_claim((worn.get_stylebox(&"normal", Look.ACTION) as StyleBoxFlat).bg_color == Color("#8a3ffc"), "an app's own palette is worn")
+	_claim(worn.get_stylebox(&"normal", Look.ACTION).from_color == Color("#8a3ffc"), "an app's own palette is worn")
+	var flat := Look.PALETTE.duplicate()
+	flat.erase(&"accent_end")
+	_claim(Look.gradient_end(flat) == Look.PALETTE[&"accent"], "a palette with no gradient end fills buttons with its accent alone")
 
 	# button(): the action's words and no reason line, whatever the action's refusal says.
 	var described: GdChime.Desc = Look.button(Builder.new(), &"does_a_thing")

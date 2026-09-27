@@ -27,6 +27,12 @@ extends RefCounted
 ## Installed into each app as res://addons/factory_look/ by tooling/install.py.
 
 const Phone := preload("phone.gd")
+const GradientPill := preload("gradient_pill.gd")
+## Manrope, a geometric sans (SIL Open Font License, fonts/OFL.txt), in its variable form.
+const FONT := preload("fonts/Manrope.ttf")
+## Its weights: words, and titles.
+const WEIGHT := 500
+const TITLE_WEIGHT := 750
 
 ## The theme types this look adds; pass them as a style.
 const PAGE := &"FactoryPage"
@@ -41,7 +47,8 @@ const STATES: Array[StringName] = [&"normal", &"hover", &"inert", &"current", &"
 ## The factory's palette: dark navy glass - navy ground, cards a shade
 ## lighter with thin cool outlines, light words, teal as the one strong
 ## accent and violet as the second. The seven keys gd-chime's Themes reads
-## come first; an app's own palette needs those seven, and may add accent_2.
+## come first; an app's own palette needs those seven, and may add
+## accent_2 (a second accent) and accent_end (where a button's gradient ends).
 const PALETTE := {
 	&"ground": Color("#121829"),
 	&"raised": Color("#1b2339"),
@@ -51,6 +58,7 @@ const PALETTE := {
 	&"accent": Color("#19c3b3"),
 	&"shade": Color(0.02, 0.03, 0.08, 0.7),
 	&"accent_2": Color("#7c5cff"),
+	&"accent_end": Color("#2fd6e8"),
 }
 ## Rounded throughout: cards and fields, and buttons as pills.
 const CORNER := 16
@@ -63,12 +71,14 @@ const TITLE_SIZE := 44
 ## The whole look, sized for the screen it runs on.
 static func make(palette: Dictionary = PALETTE) -> Theme:
 	var theme := GdChime.Themes.new(palette)
+	_type(theme)
 	_page(theme, palette)
 	_words(theme, palette)
 	_field(theme, palette)
 	_action(theme, palette)
 	_link(theme, palette)
 	_card(theme, palette)
+	_scroll_bars(theme)
 	Phone.enlarge(theme, Phone.factor())
 	return theme
 
@@ -117,11 +127,17 @@ static func _field(theme: Theme, palette: Dictionary) -> void:
 static func _action(theme: Theme, palette: Dictionary) -> void:
 	theme.set_type_variation(ACTION, GdChime.Themes.PRESSABLE)
 	var accent: Color = palette[&"accent"]
+	var end: Color = gradient_end(palette)
 	for state: StringName in [&"normal", &"hover", &"glowing"]:
-		var lit_up := _box(accent if state == &"normal" else accent.darkened(0.2), PILL, 18)
+		var pressed := state != &"normal"
+		var lit_up := GradientPill.new()
+		lit_up.from_color = accent.darkened(0.2) if pressed else accent
+		lit_up.to_color = end.darkened(0.2) if pressed else end
+		lit_up.radius = PILL
 		# A soft glow of the accent around it, as light through glass.
-		lit_up.shadow_color = Color(accent, 0.35)
-		lit_up.shadow_size = 10
+		lit_up.glow = Color(accent, 0.45)
+		lit_up.glow_size = 10
+		lit_up.set_content_margin_all(18)
 		theme.set_stylebox(state, ACTION, lit_up)
 		theme.set_color(StringName("font_color_" + state), ACTION, Color.WHITE)
 	# gd-chime draws a button that can't be used as inert, and flashes refusing when it is pressed anyway.
@@ -178,6 +194,36 @@ static func faded(palette: Dictionary) -> Color:
 
 static func faded_words(palette: Dictionary) -> Color:
 	return (palette[&"ink_soft"] as Color).lerp(palette[&"ground"], 0.45)
+
+
+## Where a button's gradient ends: the palette's accent_end, or its accent (no gradient) when it has none.
+static func gradient_end(palette: Dictionary) -> Color:
+	return palette.get(&"accent_end", palette[&"accent"])
+
+
+## Manrope for every word, bolder for titles and headings.
+static func _type(theme: Theme) -> void:
+	theme.default_font = weighted(WEIGHT)
+	for heading: StringName in [GdChime.Themes.TITLE, GdChime.Themes.WORDS]:
+		theme.set_font(&"font", heading, weighted(TITLE_WEIGHT))
+
+
+## Manrope at a weight from 200 to 800.
+static func weighted(weight: int) -> FontVariation:
+	var font := FontVariation.new()
+	font.base_font = FONT
+	var wght := TextServerManager.get_primary_interface().name_to_tag("wght")
+	font.variation_opentype = {wght: weight}
+	return font
+
+
+## No scroll bars: on a phone a list is swiped, and a bar's reserved strip
+## made a list's right margin wider than its left (gd-chime's scroll always
+## reserves one).
+static func _scroll_bars(theme: Theme) -> void:
+	for bar: StringName in [&"VScrollBar", &"HScrollBar"]:
+		for part: StringName in [&"scroll", &"scroll_focus", &"grabber", &"grabber_highlight", &"grabber_pressed"]:
+			theme.set_stylebox(part, bar, StyleBoxEmpty.new())
 
 
 ## The second accent: the palette's accent_2, or the first accent when it has none.
