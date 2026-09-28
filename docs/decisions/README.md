@@ -13,3 +13,4 @@ Ordinary implementation details don't get one.
 | [D-005](D-005-debug-apks-and-a-shared-debug-key.md) | Milestone 1 ships debug APKs signed by a shared debug key in the repo |
 | [D-006](D-006-tooling-is-python-standard-library.md) | Factory tooling is Python 3, standard library only |
 | [D-007](D-007-phone-sizing-in-the-look.md) | Phone sizing is done in the look, not in gd-chime |
+| [D-008](D-008-every-app-has-settings.md) | Every app has the same Settings, and text size is one of them |

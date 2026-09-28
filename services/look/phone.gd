@@ -32,13 +32,25 @@ const PIXELS: Array[StringName] = [
 	&"line_width", &"marker_radius", &"tick_width", &"outline_width",
 	&"picked_width", &"hatch_gap", &"thick", &"step",
 ]
+## How big the look is against gd-chime's monitor sizes once the screen's
+## smallness is made up: a share a person chooses in Settings (the settings
+## service), 0.65 at first. gd-chime's words at full size came out about
+## twice Android's usual 14-16 dp, too chunky in the hand.
+const DEFAULT_SIZE := 0.65
+## Where Settings keeps it: this file, under this section, as "text_size".
+## Read here once, as the first look is made, since the look comes before
+## any model; after that Settings sets chosen_size itself.
+const SETTINGS_FILE := "user://factory_settings.json"
+const SECTION := "factory"
+## The share chosen, or below zero until it has been read.
+static var chosen_size := -1.0
 ## Stretch the dp count of a phone's short side can be forced to, for a
 ## screenshot on a desktop: `-- --phone-dp=411`.
 const FORCE_SWITCH := "--phone-dp="
 
 
 ## How many times bigger this screen needs the look: 1 on a desktop,
-## about 2.6 on a phone 411 dp across.
+## about 1.7 on a phone 411 dp across at the first text size (2.6 at full size).
 static func factor() -> float:
 	var short_dp := _forced_short_dp()
 	if short_dp <= 0.0:
@@ -49,7 +61,20 @@ static func factor() -> float:
 		if dpi <= 0.0:
 			return 1.0
 		short_dp = minf(screen.x, screen.y) / (dpi / DP_PER_INCH)
-	return clampf(CANVAS_SHORT_SIDE / short_dp, 1.0, 4.0)
+	return clampf(CANVAS_SHORT_SIDE / short_dp * text_size(), 1.0, 4.0)
+
+
+## The share of gd-chime's sizes a person chose, read from Settings' file
+## the first time; DEFAULT_SIZE when nothing was chosen or the file won't read.
+static func text_size() -> float:
+	if chosen_size < 0.0:
+		chosen_size = DEFAULT_SIZE
+		# JSON.parse, not parse_string: a file that won't read is quietly the first size, not an error.
+		var reading := JSON.new()
+		var kept: Variant = reading.data if FileAccess.file_exists(SETTINGS_FILE) and reading.parse(FileAccess.get_file_as_string(SETTINGS_FILE)) == OK else null
+		if kept is Dictionary and kept.get(SECTION) is Dictionary and (kept[SECTION].get("text_size") is float or kept[SECTION].get("text_size") is int):
+			chosen_size = clampf(kept[SECTION]["text_size"], 0.5, 1.0)
+	return chosen_size
 
 
 ## The look, every size in it multiplied by `by`.

@@ -5,6 +5,7 @@ config_version=5
 
 [application]
 
+config/version="0.1.0"
 config/name="I Ching"
 run/main_scene="res://addons/factory_look/opening.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
