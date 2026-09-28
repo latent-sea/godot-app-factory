@@ -35,7 +35,7 @@ class CreateAppTest(unittest.TestCase):
     def test_identity_comes_from_the_name(self) -> None:
         app = create_app.create(self.root, "shopping_list")
         manifest = json.loads((app / "factory.json").read_text())
-        self.assertEqual(manifest, {"name": "Shopping List", "package": "com.latentsea.shopping_list", "services": ["look", "basics", "testkit"]})
+        self.assertEqual(manifest, {"name": "Shopping List", "package": "com.latentsea.shopping_list", "services": ["look", "basics", "settings", "testkit"]})
         self.assertIn('config/name="Shopping List"', (app / "project.godot").read_text())
         presets = (app / "export_presets.cfg").read_text()
         self.assertIn('package/unique_name="com.latentsea.shopping_list"', presets)

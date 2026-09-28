@@ -75,3 +75,8 @@ created app on every run).
 - An app's main scene is the look service's `opening.tscn`, which loads
   the app's own `main.tscn` behind the loading screen. Run `main.tscn`
   directly in the editor to skip it.
+- Settings come with the template: `Settings.declare(register)` in declare,
+  `settings = Settings.install(self, [saving])` in describe with every data
+  SettingsFile, the gear (`Settings.gear(ui)`) in the first screen's title
+  row, and `settings.screen(ui)` in the stack. A probe walks it with
+  `await walk_settings()` from the screen with the gear.

@@ -1,5 +1,5 @@
 {
   "name": "{{title}}",
   "package": "{{package}}",
-  "services": ["look", "basics", "testkit"]
+  "services": ["look", "basics", "settings", "testkit"]
 }

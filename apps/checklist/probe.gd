@@ -9,6 +9,7 @@ const Items := preload("res://items.gd")
 func run() -> void:
 	await begin()
 
+	await walk_settings()
 	var line: LineEdit = fields()[0]
 	claim("starts empty", shows("0 of 0 done") and _rows().is_empty())
 

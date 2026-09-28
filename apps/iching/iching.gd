@@ -10,6 +10,7 @@ extends ChimeApp
 
 const FactoryLook := preload("res://addons/factory_look/look.gd")
 const Basics := preload("res://addons/factory_basics/basics.gd")
+const Settings := preload("res://addons/factory_settings/settings.gd")
 const H := preload("res://hexagrams.gd")
 const Cast := preload("res://cast.gd")
 const PromptList := preload("res://prompts.gd")
@@ -40,6 +41,7 @@ var prompt_list: PromptList
 var copying: Copying
 var menu: GdChime.OpenMenu
 var saving: GdChime.SettingsFile
+var settings: Settings
 
 
 func look() -> Theme:
@@ -61,6 +63,7 @@ func look() -> Theme:
 
 
 func declare(register: GdChime.Actions) -> void:
+	Settings.declare(register)
 	register.declare_all({
 		Cast.ASKS: ["Question"],
 		Cast.CASTS: ["Cast a line"],
@@ -89,11 +92,12 @@ func describe() -> GdChime.Desc:
 	Basics.answer_back(self)
 	saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("iching", saved_at)))
 	saving.keep("iching", prompt_list)
+	settings = Settings.install(self, [saving])
 	menu = model(GdChime.OpenMenu.new(chimes, commands, actions))
 	# The prompt rows' menus need this in place before the first row is described.
 	GdChime.ContextMenu.make(ui, menu)
 	var drawer := _copy_drawer()
-	var screens := ui.stack([_cast_screen(), _result_screen(drawer), _prompts_screen(), _edit_screen()])
+	var screens := ui.stack([_cast_screen(), _result_screen(drawer), _prompts_screen(), _edit_screen(), settings.screen(ui)])
 	return ui.app(&"iching", [screens])
 
 
@@ -104,6 +108,7 @@ func _cast_screen() -> GdChime.Desc:
 	var head := ui.row([
 		ui.text(GdChime.Phrase.of("I Ching"), GdChime.Themes.TITLE).grow(),
 		FactoryLook.link(ui, GOES_TO_PROMPTS).goes_to(PROMPTS),
+		Settings.gear(ui),
 	])
 	var content := ui.column([
 		head,

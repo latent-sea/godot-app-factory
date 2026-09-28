@@ -10,6 +10,7 @@ extends ChimeApp
 
 const FactoryLook := preload("res://addons/factory_look/look.gd")
 const Basics := preload("res://addons/factory_basics/basics.gd")
+const Settings := preload("res://addons/factory_settings/settings.gd")
 const T := preload("res://note_text.gd")
 const Notebook := preload("res://notebook.gd")
 const Walk := preload("res://probe.gd")
@@ -38,6 +39,7 @@ var saved_at := ""
 var notebook: Notebook
 var menu: GdChime.OpenMenu
 var saving: GdChime.SettingsFile
+var settings: Settings
 
 
 ## The factory's look, with a tag's chip and a month's heading.
@@ -80,6 +82,7 @@ func look() -> Theme:
 
 
 func declare(register: GdChime.Actions) -> void:
+	Settings.declare(register)
 	register.declare_all({
 		Notebook.ADDS: ["New note"],
 		Notebook.OPENS: ["Open"],
@@ -101,10 +104,11 @@ func describe() -> GdChime.Desc:
 	Basics.answer_back(self)
 	saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("notes", saved_at)))
 	saving.keep("notes", notebook)
+	settings = Settings.install(self, [saving])
 	menu = model(GdChime.OpenMenu.new(chimes, commands, actions))
 	# The rows' menus need this in place before the first row is described.
 	GdChime.ContextMenu.make(ui, menu)
-	return ui.app(&"notes", [ui.stack([_list_screen(), _edit_screen()])])
+	return ui.app(&"notes", [ui.stack([_list_screen(), _edit_screen(), settings.screen(ui)])])
 
 
 func _list_screen() -> GdChime.Desc:
@@ -121,6 +125,7 @@ func _list_screen() -> GdChime.Desc:
 	var head := ui.row([
 		ui.text(GdChime.Phrase.of("Notes"), GdChime.Themes.TITLE).grow(),
 		FactoryLook.link(ui, Notebook.ADDS),
+		Settings.gear(ui),
 	])
 	var content := ui.column([
 		head,

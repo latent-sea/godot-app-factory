@@ -152,6 +152,39 @@ func window_point(at: Vector2) -> Vector2:
 	return app.get_global_rect().position + app.viewport.get_final_transform() * at
 
 
+## Settings, walked from the screen that has the gear: it opens, the text
+## size changes and the look is made again, haptics turn off and on, and
+## Reset app data asks first - cancelled here, since a reset starts the app
+## again (the settings service's own test deletes and restarts). Leaves the
+## settings as found, back on the screen it started from.
+func walk_settings() -> void:
+	var from := top()
+	var gear := pressable(&"opens_settings")
+	claim("there is a gear for settings", gear != null)
+	if gear == null:
+		return
+	gear.pressed()
+	await frames(4)
+	claim("the gear opens settings", top() == &"settings")
+	claim("settings say what the app is", shows_part(str(ProjectSettings.get_setting("application/config/name"))) and shows("Latensea Productions"))
+	var worn: Theme = app.canvas.theme
+	app.commands.dispatch(&"settings", &"sizes_the_words", {"value": 80.0})
+	await frames()
+	claim("a text size is kept", app.settings.size.read() == 80)
+	claim("and the look is made again", app.canvas.theme != worn)
+	app.commands.dispatch(&"settings", &"sizes_the_words", {"value": 65.0})
+	await press(&"turns_haptics")
+	claim("haptics turn off", not app.settings.haptics.read() and shows("Off"))
+	await press(&"turns_haptics")
+	claim("and on again", app.settings.haptics.read() and shows("On"))
+	await press(&"asks_to_reset")
+	claim("Reset app data asks first", shows_part("can't be undone"))
+	await press(&"closes_the_overlay")
+	claim("and can be cancelled", top() == &"settings")
+	await press(&"leaves_settings")
+	claim("back leaves settings", top() == from)
+
+
 ## Record a claim. A claim that failed once stays failed.
 func claim(what: String, held: bool) -> void:
 	if _said.has(what) and not _said[what]:

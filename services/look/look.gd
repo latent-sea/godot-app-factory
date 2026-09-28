@@ -41,6 +41,8 @@ const MARKED := &"FactoryMarked"
 const ACTION := &"FactoryAction"
 const LINK := &"FactoryLink"
 const CARD := &"FactoryCard"
+## The gear that opens an app's settings (the settings service draws it).
+const GEAR := &"FactoryGear"
 ## Every state gd-chime draws a pressable in (face.gd), and its focus.
 const STATES: Array[StringName] = [&"normal", &"hover", &"inert", &"current", &"glowing", &"selected", &"lifted", &"accepting", &"refusing", &"listening"]
 
@@ -78,6 +80,8 @@ static func make(palette: Dictionary = PALETTE) -> Theme:
 	_action(theme, palette)
 	_link(theme, palette)
 	_card(theme, palette)
+	_settings_parts(theme, palette)
+	_sheets(theme, palette)
 	_scroll_bars(theme)
 	Phone.enlarge(theme, Phone.factor())
 	return theme
@@ -183,6 +187,68 @@ static func _card(theme: Theme, palette: Dictionary) -> void:
 		theme.set_stylebox(state, CARD, pressed if state in [&"hover", &"glowing", &"selected", &"accepting"] else resting)
 		theme.set_color(StringName("font_color_" + state), CARD, palette[&"ink"])
 	theme.set_stylebox(&"focus", CARD, StyleBoxEmpty.new())
+
+
+## What a settings screen is made of (the settings service): the slider,
+## the on/off toggle as a pill, and the gear that opens settings.
+static func _settings_parts(theme: Theme, palette: Dictionary) -> void:
+	var slider: StringName = GdChime.Fields.SLIDER
+	theme.set_stylebox(&"track", slider, _box(palette[&"raised"], PILL, 0))
+	theme.set_stylebox(&"fill", slider, _box(palette[&"accent"], PILL, 0))
+	theme.set_stylebox(&"handle", slider, _box(palette[&"ink"], PILL, 0))
+	theme.set_constant(&"handle_width", slider, 26)
+	theme.set_constant(&"track_thickness", slider, 10)
+	# No box round the whole slider: the track is the only ground it needs.
+	for state: StringName in STATES + [&"focus"]:
+		theme.set_stylebox(state, slider, StyleBoxEmpty.new())
+	var on := GradientPill.new()
+	on.from_color = palette[&"accent"]
+	on.to_color = gradient_end(palette)
+	on.radius = PILL
+	on.content_margin_left = 22
+	on.content_margin_right = 22
+	on.content_margin_top = 8
+	on.content_margin_bottom = 8
+	var off := _box(faded(palette), PILL, 0)
+	off.border_color = palette[&"lit"]
+	off.set_border_width_all(1)
+	off.content_margin_left = 22
+	off.content_margin_right = 22
+	off.content_margin_top = 8
+	off.content_margin_bottom = 8
+	for state: StringName in STATES:
+		theme.set_stylebox(state, GdChime.Setting.TOGGLE_ON, on)
+		theme.set_color(StringName("font_color_" + state), GdChime.Setting.TOGGLE_ON, Color.WHITE)
+		theme.set_stylebox(state, GdChime.Setting.TOGGLE_OFF, off)
+		theme.set_color(StringName("font_color_" + state), GdChime.Setting.TOGGLE_OFF, palette[&"ink_soft"])
+	for toggle: StringName in [GdChime.Setting.TOGGLE_ON, GdChime.Setting.TOGGLE_OFF]:
+		theme.set_stylebox(&"focus", toggle, StyleBoxEmpty.new())
+	theme.set_type_variation(GEAR, &"Control")
+	theme.set_color(&"font_color", GEAR, palette[&"ink_soft"])
+	theme.set_color(&"hole", GEAR, palette[&"ground"])
+	theme.set_constant(&"least_height", GEAR, 26)
+
+
+## A question asked over everything (gd-chime's Confirm, and a setting's
+## choices): a raised card, and its buttons as outlined pills with no focus
+## frame - the question opens with the focus on its cancel.
+static func _sheets(theme: Theme, palette: Dictionary) -> void:
+	var sheet := _box(palette[&"raised"], CORNER, 28)
+	sheet.border_color = palette[&"lit"]
+	sheet.set_border_width_all(2)
+	theme.set_stylebox(&"panel", GdChime.Setting.SHEET, sheet)
+	var button: StringName = GdChime.Pressables.BUTTON
+	var resting := _box(palette[&"raised"], PILL, 16)
+	resting.border_color = palette[&"lit"]
+	resting.set_border_width_all(2)
+	resting.content_margin_left = 26
+	resting.content_margin_right = 26
+	var pressed := resting.duplicate() as StyleBoxFlat
+	pressed.bg_color = palette[&"lit"]
+	for state: StringName in STATES:
+		theme.set_stylebox(state, button, pressed if state in [&"hover", &"glowing", &"selected", &"accepting"] else resting)
+		theme.set_color(StringName("font_color_" + state), button, palette[&"ink"])
+	theme.set_stylebox(&"focus", button, StyleBoxEmpty.new())
 
 
 ## Words in the accent that act when pressed, with no box: for going somewhere.

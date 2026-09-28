@@ -10,6 +10,7 @@ const Items := preload("res://items.gd")
 const Walk := preload("res://probe.gd")
 const FactoryLook := preload("res://addons/factory_look/look.gd")
 const Basics := preload("res://addons/factory_basics/basics.gd")
+const Settings := preload("res://addons/factory_settings/settings.gd")
 
 const LIST := &"list"
 ## The tick boxes, as words so they grow with the look.
@@ -21,6 +22,7 @@ var saved_at := ""
 var list: Items
 var menu: GdChime.OpenMenu
 var saving: GdChime.SettingsFile
+var settings: Settings
 
 
 ## The factory's look, as it is: the Checklist asks nothing of its own.
@@ -29,6 +31,7 @@ func look() -> Theme:
 
 
 func declare(register: GdChime.Actions) -> void:
+	Settings.declare(register)
 	register.declare_all({
 		Items.ADDS: ["Add"],
 		Items.TOGGLES: ["Tick or untick"],
@@ -44,6 +47,7 @@ func describe() -> GdChime.Desc:
 	Basics.answer_back(self)
 	saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("checklist", saved_at)))
 	saving.keep("checklist", list)
+	settings = Settings.install(self, [saving])
 	menu = model(GdChime.OpenMenu.new(chimes, commands, actions))
 	# The rows' menus need this in place before the first row is described.
 	GdChime.ContextMenu.make(ui, menu)
@@ -53,13 +57,13 @@ func describe() -> GdChime.Desc:
 		return GdChime.Phrase.with("%d of %d done", [done, all.size()]))
 	var rows := ui.each(list.items, _row, func(one: Dictionary) -> int: return one["id"])
 	var screen := ui.column([
-		ui.text(GdChime.Phrase.of("Checklist"), GdChime.Themes.TITLE),
+		ui.row([ui.text(GdChime.Phrase.of("Checklist"), GdChime.Themes.TITLE).grow(), Settings.gear(ui)]),
 		ui.text(counted, GdChime.Themes.REASON),
 		ui.field(Items.ADDS, GdChime.Fields.FIELD).takes_focus(),
 		ui.scroll(rows, null, &"down").grow(),
 		FactoryLook.button(ui, Items.CLEARS),
 	])
-	return ui.app(&"checklist", [ui.screen(LIST, [FactoryLook.page(ui, [screen])], list)])
+	return ui.app(&"checklist", [ui.stack([ui.screen(LIST, [FactoryLook.page(ui, [screen])], list), settings.screen(ui)])])
 
 
 ## One item: its tick box and its words, quieter once done. Tapped, it ticks; swiped left, it is deleted.

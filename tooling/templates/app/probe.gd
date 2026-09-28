@@ -9,4 +9,6 @@ func run() -> void:
 	await begin()
 	claim("the home screen is open", top() == &"home")
 	claim("the title shows", shows("{{title}}"))
+	# The gear, and every setting: the factory's testkit walks them.
+	await walk_settings()
 	finish()

@@ -13,6 +13,7 @@ const Copying := preload("res://copying.gd")
 func run() -> void:
 	await begin()
 	app.cast.seed_with(7)
+	await walk_settings()
 	claim("it opens on the cast screen", top() == &"cast")
 	claim("the first tap is line 1", shows("Tap the square: line 1 of 6"))
 

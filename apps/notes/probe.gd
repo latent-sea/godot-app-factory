@@ -14,6 +14,7 @@ func run() -> void:
 	claim("an empty notebook says how tags work", shows_part("No notes yet"))
 	claim("the search isn't typing as the list opens (a phone's keyboard would rise)", not fields()[0].has_focus())
 
+	await walk_settings()
 	# Write a note: New note opens an empty editor.
 	await press(Notebook.ADDS)
 	claim("New note opens the editor", top() == &"edit")
