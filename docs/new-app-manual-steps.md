@@ -72,3 +72,6 @@ created app on every run).
   list's "New note" is in the title row for this reason).
 - A pressable's style can be a bound value (`Bound` reading a type name),
   which is how a chosen tag chip changes look.
+- An app's main scene is the look service's `opening.tscn`, which loads
+  the app's own `main.tscn` behind the loading screen. Run `main.tscn`
+  directly in the editor to skip it.

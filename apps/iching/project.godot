@@ -6,11 +6,12 @@ config_version=5
 [application]
 
 config/name="I Ching"
-run/main_scene="res://main.tscn"
+run/main_scene="res://addons/factory_look/opening.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
 config/quit_on_go_back=false
-boot_splash/show_image=false
+boot_splash/image="res://addons/factory_look/splash.png"
+boot_splash/stretch_mode=1
 boot_splash/bg_color=Color(0.07058824, 0.09411765, 0.16078432, 1)
 
 [display]
