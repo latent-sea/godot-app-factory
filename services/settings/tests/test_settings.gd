@@ -3,10 +3,10 @@ extends SceneTree
 ## settings.gd: text size is kept in bounds and told to the look, which is
 ## made again; haptics buzz on a press only while on; a reset deletes the
 ## app's data files, keeps the settings, and starts the app again; and what
-## is saved comes back. Prints PASS test_settings.gd, or every claim that did not hold.
+## is saved comes back; and the size is read from the settings' own file, for
+## an app's look() made before any model. Prints PASS test_settings.gd, or every claim that did not hold.
 
 const Settings := preload("res://addons/factory_settings/settings.gd")
-const Phone := preload("res://addons/factory_look/phone.gd")
 
 var _failed: Array[String] = []
 
@@ -29,7 +29,7 @@ class App extends Node:
 	func look() -> Theme:
 		looks += 1
 		var theme := Theme.new()
-		theme.default_font_size = roundi(100 * Phone.text_size())
+		theme.default_font_size = roundi(100 * Settings.text_size())
 		return theme
 
 
@@ -58,7 +58,7 @@ func _init() -> void:
 
 	_claim(settings.size.read() == 65 and settings.haptics.read(), "text size starts at 65 per cent, haptics on")
 	settings.told(Settings.SIZES, {"value": 80.0})
-	_claim(settings.size.read() == 80 and is_equal_approx(Phone.chosen_size, 0.8), "a size chosen is told to the look")
+	_claim(settings.size.read() == 80 and is_equal_approx(Settings.text_size(), 0.8), "a size chosen is the size the look is asked for")
 	_claim(app.looks == 1 and app.canvas.theme.default_font_size == 80, "and the look is made again and worn")
 	settings.told(Settings.SIZES, {"value": 20.0})
 	_claim(settings.size.read() == Settings.LEAST_SIZE, "a size below the least is the least")
@@ -77,28 +77,31 @@ func _init() -> void:
 	var saved: Dictionary = JSON.parse_string(JSON.stringify(settings.saved()))
 	var back := Settings.new(chimes)
 	root.add_child(back)
-	Phone.chosen_size = -1.0
+	Settings.forget_text_size()
 	back.restore(saved)
-	_claim(back.size.read() == 70 and not back.haptics.read() and is_equal_approx(Phone.chosen_size, 0.7), "saved then restored: the same size and haptics, told to the look")
+	_claim(back.size.read() == 70 and not back.haptics.read() and is_equal_approx(Settings.text_size(), 0.7), "saved then restored: the same size and haptics, and the size is the look's")
 
 	settings.told(Settings.RESETS, {})
 	_claim(not FileAccess.file_exists(data_path), "a reset deletes the app's data")
 	_claim(restarted[0] == 1, "and starts the app again")
 
-	# The look reads the chosen size from Settings' file before any model is made.
-	var file := FileAccess.open(Phone.SETTINGS_FILE, FileAccess.WRITE)
-	file.store_string(JSON.stringify({Phone.SECTION: {"text_size": 0.85, "haptics": true}}))
+	# The size kept in the settings' own file, read before any model is made.
+	var kept_at := "user://settings_test_kept.json"
+	var file := FileAccess.open(kept_at, FileAccess.WRITE)
+	file.store_string(JSON.stringify({Settings.SECTION: {"text_size": 0.85, "haptics": true}}))
 	file.close()
-	Phone.chosen_size = -1.0
-	_claim(is_equal_approx(Phone.text_size(), 0.85), "the look reads the size kept in Settings' file")
-	file = FileAccess.open(Phone.SETTINGS_FILE, FileAccess.WRITE)
+	Settings.forget_text_size()
+	_claim(is_equal_approx(Settings.text_size(kept_at, false), 0.85), "the size kept in the settings' file is read for the look")
+	Settings.forget_text_size()
+	_claim(is_equal_approx(Settings.text_size(kept_at, true), Settings.FactoryLook.Phone.DEFAULT_SIZE), "but not by a probe, whose settings start empty")
+	file = FileAccess.open(kept_at, FileAccess.WRITE)
 	file.store_string("not json")
 	file.close()
-	Phone.chosen_size = -1.0
-	_claim(is_equal_approx(Phone.text_size(), Phone.DEFAULT_SIZE), "an unreadable file gives the first size")
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(Phone.SETTINGS_FILE))
-	Phone.chosen_size = -1.0
-	_claim(is_equal_approx(Phone.text_size(), Phone.DEFAULT_SIZE), "and so does no file")
+	Settings.forget_text_size()
+	_claim(is_equal_approx(Settings.text_size(kept_at, false), Settings.FactoryLook.Phone.DEFAULT_SIZE), "an unreadable file gives the first size")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(kept_at))
+	Settings.forget_text_size()
+	_claim(is_equal_approx(Settings.text_size(kept_at, false), Settings.FactoryLook.Phone.DEFAULT_SIZE), "and so does no file")
 
 	app.canvas.free()
 	for node: Node in [hand, app, data, settings, back]:

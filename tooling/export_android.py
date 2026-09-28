@@ -4,7 +4,10 @@
     python tooling/export_android.py checklist  just the named apps
     options: --godot <path>
 
-Writes build/<app>-debug.apk. Run tooling/install.py first.
+Writes build/<app>-debug.apk. Run tooling/install.py first. An APK that
+carries anything only a test needs - a probe, the testkit, tests - is an
+error: the export preset's exclude_filter should keep them out, and this
+checks it did (development_files).
 
 Needs Godot (see tooling/godot.py) with its Android export templates
 installed, and:
@@ -22,6 +25,7 @@ import argparse
 import os
 import re
 import sys
+import zipfile
 from pathlib import Path
 
 import godot
@@ -30,6 +34,14 @@ from install import InstallError, find_apps
 ROOT = godot.ROOT
 KEYSTORE = ROOT / "tooling" / "android" / "debug.keystore"
 SDK_SETTING = "export/android/android_sdk_path"
+## What only a test needs, as it would sit in an APK's assets.
+DEVELOPMENT = re.compile(r"^assets/(probe\.gd|addons/factory_testkit/|(.*/)?tests/)")
+
+
+def development_files(apk: Path) -> list[str]:
+    """Every file in the APK that only a test needs."""
+    with zipfile.ZipFile(apk) as packed:
+        return sorted(name for name in packed.namelist() if DEVELOPMENT.match(name))
 
 
 def point_editor_at_sdk(godot_bin: str, sdk: Path, app: Path) -> None:
@@ -64,6 +76,9 @@ def export(godot_bin: str, app: Path) -> Path:
     done = godot.run(godot_bin, app, "--export-debug", "Android", str(apk))
     if done.returncode != 0 or not apk.exists():
         raise godot.ToolError(f"{app.name}: Android export failed\n{done.stdout}{done.stderr}")
+    carried = development_files(apk)
+    if carried:
+        raise godot.ToolError(f"{app.name}: the APK carries what only a test needs (check exclude_filter in export_presets.cfg): {', '.join(carried[:5])}")
     return apk
 
 

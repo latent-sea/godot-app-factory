@@ -181,10 +181,51 @@ class ServiceTest(Factory):
         with self.assertRaisesRegex(install.InstallError, "service 'nope', but services/ has look"):
             install.install(self.root, [])
 
+    def test_a_service_without_what_it_needs_is_refused(self) -> None:
+        # the review's experiment: settings asked for without the look it is built on
+        write(self.root / "services/settings/settings.gd", "extends RefCounted\n")
+        write(self.root / "services/settings/service.json", json.dumps({"needs": ["look", "basics"]}))
+        write(self.root / "services/basics/basics.gd", "extends RefCounted\n")
+        write(self.root / "apps/alpha/factory.json", json.dumps({"services": ["settings", "basics"]}))
+        with self.assertRaisesRegex(install.InstallError, "alpha asks for service 'settings', which needs look"):
+            install.install(self.root, [])
+        self.assertFalse((self.root / "apps/alpha/addons/factory_settings").exists(), "nothing is installed for a refused app")
+
+    def test_a_service_with_what_it_needs_is_installed_without_its_manifest(self) -> None:
+        write(self.root / "services/settings/settings.gd", "extends RefCounted\n")
+        write(self.root / "services/settings/service.json", json.dumps({"needs": ["look"]}))
+        write(self.root / "apps/alpha/factory.json", json.dumps({"services": ["look", "settings"]}))
+        install.install(self.root, [])
+        self.assertEqual(files_under(self.root / "apps/alpha/addons/factory_settings"), {"settings.gd": "extends RefCounted\n"})
+
+    def test_needs_must_be_a_list(self) -> None:
+        write(self.root / "services/look/service.json", json.dumps({"needs": "basics"}))
+        with self.assertRaisesRegex(install.InstallError, "'needs' must be a list"):
+            install.install(self.root, [])
+
     def test_services_must_be_a_list(self) -> None:
         write(self.root / "apps/alpha/factory.json", json.dumps({"services": "look"}))
         with self.assertRaisesRegex(install.InstallError, "must be a list"):
             install.install(self.root, [])
+
+
+class RealServicesTest(unittest.TestCase):
+    def test_every_service_names_what_its_code_reaches(self) -> None:
+        # a service may reach another only by naming it in its service.json
+        for folder in sorted((install.ROOT / "services").iterdir()):
+            if folder.is_dir():
+                with self.subTest(service=folder.name):
+                    reached = install.service_reaches(install.ROOT, folder.name)
+                    self.assertLessEqual(reached, set(install.service_needs(install.ROOT, folder.name)), f"{folder.name} reaches {sorted(reached)}")
+
+    def test_the_look_knows_nothing_of_settings_or_the_shell(self) -> None:
+        # appearance only: it is handed the text size, and opens no scene
+        self.assertEqual(install.service_needs(install.ROOT, "look"), [])
+
+    def test_every_real_app_has_what_its_services_need(self) -> None:
+        for app in install.find_apps(install.ROOT, []):
+            with self.subTest(app=app.name):
+                install.read_services(install.ROOT, app)
 
 
 class RealPinTest(unittest.TestCase):

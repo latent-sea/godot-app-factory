@@ -10,6 +10,11 @@ Nothing else from the dependency reaches the app.
 
 Then each factory service the app names in its factory.json ("services":
 ["look"]) is copied from services/<name>/ to apps/<app>/addons/factory_<name>/.
+A service says in its service.json which other services it needs
+({"needs": ["look"]}); an app naming a service without everything it needs
+is refused here, before Godot would find the gap. A service's code may
+reach another service only if it names it there (tests/test_install.py
+checks every real service).
 
 Running it twice changes nothing the second time. Every copy is gitignored:
 the pin and services/ are the only sources.
@@ -151,7 +156,35 @@ def read_services(root: Path, app: Path) -> list[str]:
     for name in services:
         if name not in have:
             raise InstallError(f"{app.name} asks for service '{name}', but services/ has {', '.join(have) or 'none'}")
+    for name in services:
+        missing = [need for need in service_needs(root, name) if need not in services]
+        if missing:
+            raise InstallError(f"{app.name} asks for service '{name}', which needs {', '.join(missing)}: add it to {path}")
     return services
+
+
+def service_needs(root: Path, name: str) -> list[str]:
+    """The other services a service says it needs, in its service.json; none without one."""
+    path = root / "services" / name / "service.json"
+    if not path.exists():
+        return []
+    try:
+        needs = json.loads(path.read_text(encoding="utf-8")).get("needs", [])
+    except json.JSONDecodeError as e:
+        raise InstallError(f"{path} is not valid JSON: {e}") from None
+    if not isinstance(needs, list) or not all(isinstance(n, str) for n in needs):
+        raise InstallError(f"{path}: 'needs' must be a list of service names")
+    return needs
+
+
+def service_reaches(root: Path, name: str) -> set[str]:
+    """Every other service a service's code and scenes reach, by their installed path."""
+    reached: set[str] = set()
+    for source in (root / "services" / name).rglob("*"):
+        if source.suffix in (".gd", ".tscn", ".tres") and source.is_file():
+            reached.update(re.findall(r"res://addons/factory_(\w+)/", source.read_text(encoding="utf-8")))
+    reached.discard(name)
+    return reached
 
 
 def install_service(root: Path, app: Path, name: str) -> None:
@@ -159,7 +192,7 @@ def install_service(root: Path, app: Path, name: str) -> None:
     dest = app / "addons" / f"factory_{name}"
     if dest.exists():
         shutil.rmtree(dest)
-    shutil.copytree(root / "services" / name, dest, ignore=shutil.ignore_patterns("*.uid", "__pycache__"))
+    shutil.copytree(root / "services" / name, dest, ignore=shutil.ignore_patterns("*.uid", "__pycache__", "service.json"))
 
 
 def install(root: Path, names: list[str]) -> list[Path]:

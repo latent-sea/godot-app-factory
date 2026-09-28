@@ -7,7 +7,6 @@ extends ChimeApp
 ## declares the actions and their words, and arranges the screen.
 
 const Items := preload("res://items.gd")
-const Walk := preload("res://probe.gd")
 const FactoryLook := preload("res://addons/factory_look/look.gd")
 const Basics := preload("res://addons/factory_basics/basics.gd")
 const Settings := preload("res://addons/factory_settings/settings.gd")
@@ -27,7 +26,8 @@ var settings: Settings
 
 ## The factory's look, as it is: the Checklist asks nothing of its own.
 func look() -> Theme:
-	return FactoryLook.make()
+	# the text size a person chose in Settings, handed to the look
+	return FactoryLook.make(FactoryLook.PALETTE, Settings.text_size())
 
 
 func declare(register: GdChime.Actions) -> void:
@@ -80,4 +80,5 @@ func _row(item: GdChime.Bound) -> GdChime.Desc:
 
 
 func probe() -> RefCounted:
-	return Walk.new(self)
+	# loaded only when walked, so a release leaves the probe and the testkit out
+	return (load("res://probe.gd") as GDScript).new(self)

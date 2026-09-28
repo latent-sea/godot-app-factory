@@ -14,3 +14,4 @@ Ordinary implementation details don't get one.
 | [D-006](D-006-tooling-is-python-standard-library.md) | Factory tooling is Python 3, standard library only |
 | [D-007](D-007-phone-sizing-in-the-look.md) | Phone sizing is done in the look, not in gd-chime |
 | [D-008](D-008-every-app-has-settings.md) | Every app has the same Settings, and text size is one of them |
+| [D-009](D-009-the-factory-assembles-services-declare-needs.md) | The factory assembles an app; each service declares what it needs, the look is appearance only, a shell service runs the app |

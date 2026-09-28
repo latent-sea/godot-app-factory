@@ -14,8 +14,9 @@ extends Node
 ##   press and has no long press; a finger held still here becomes one,
 ##   and the lifting of that finger is kept from pressing the row too.
 
-const TITLE := &"Title"
-const PAGE := &"FactoryPage"
+const FactoryLook := preload("res://addons/factory_look/look.gd")
+const TITLE := GdChime.Themes.TITLE
+const PAGE := FactoryLook.PAGE
 ## How long a finger is held still before it is a long press, in seconds,
 ## and how far it may wander, in pixels of the window, and still be held still.
 const HOLD := 0.5
@@ -41,9 +42,9 @@ void fragment() {
 
 ## The app this lives beside.
 var app: Node
-## The title's two colours.
-var from_color := Color("#2fd6e8")
-var to_color := Color("#a58bff")
+## The title's two colours: the accent's end to the second accent, lightened.
+var from_color: Color = FactoryLook.gradient_end(FactoryLook.PALETTE)
+var to_color: Color = FactoryLook.second_accent(FactoryLook.PALETTE).lightened(0.3)
 ## How many long presses became a row's menu, for a test.
 var long_presses := 0
 ## Titles and pages found so far; freed ones are dropped as they are met.

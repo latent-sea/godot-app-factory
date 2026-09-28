@@ -10,7 +10,6 @@ extends ChimeApp
 const FactoryLook := preload("res://addons/factory_look/look.gd")
 const Basics := preload("res://addons/factory_basics/basics.gd")
 const Settings := preload("res://addons/factory_settings/settings.gd")
-const Walk := preload("res://probe.gd")
 
 const HOME := &"home"
 
@@ -19,7 +18,8 @@ var settings: Settings
 
 ## The factory's look. Pass a palette of your own to make() to change its colours.
 func look() -> Theme:
-	return FactoryLook.make()
+	# the text size a person chose in Settings, handed to the look
+	return FactoryLook.make(FactoryLook.PALETTE, Settings.text_size())
 
 
 func declare(register: GdChime.Actions) -> void:
@@ -41,4 +41,5 @@ func describe() -> GdChime.Desc:
 
 
 func probe() -> RefCounted:
-	return Walk.new(self)
+	# loaded only when walked, so a release leaves the probe and the testkit out
+	return (load("res://probe.gd") as GDScript).new(self)

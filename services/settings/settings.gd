@@ -17,9 +17,15 @@ extends GdChime.Controller
 ##         return ui.app(&"notes", [ui.stack([list, editor, settings.screen(ui)])])
 ##
 ## TEXT SIZE is a share of gd-chime's monitor sizes, 50 to 100 per cent,
-## 65 at first (about Android's own 14-16 dp). The look reads it as it is
-## made (look/phone.gd), so a change makes the look again and puts it on the
-## canvas: every screen changes size at once.
+## 65 at first (about Android's own 14-16 dp). The look is made before any
+## model, so the app's look() asks for it with the static text_size(), read
+## from the file once, and hands it to the look:
+##
+##     func look() -> Theme:
+##         return FactoryLook.make(FactoryLook.PALETTE, Settings.text_size())
+##
+## A change makes the look again and puts it on the canvas: every screen
+## changes size at once. The look never knows where the size is kept.
 ##
 ## THESE ARE KEPT APART FROM THE APP'S DATA, in user://factory_settings.json,
 ## so wiping the data keeps them. Wiping deletes each data file the app
@@ -27,7 +33,6 @@ extends GdChime.Controller
 ##
 ## Needs the look and basics services.
 
-const Phone := preload("res://addons/factory_look/phone.gd")
 const FactoryLook := preload("res://addons/factory_look/look.gd")
 const Basics := preload("res://addons/factory_basics/basics.gd")
 
@@ -46,9 +51,12 @@ const BUZZ := 12
 const LEAST_SIZE := 50
 const MOST_SIZE := 100
 const GEAR := FactoryLook.GEAR
+## Where the settings are kept, and their section in that file.
+const FILE := "factory_settings"
+const SECTION := "factory"
 
 ## How big the words are, in per cent of gd-chime's monitor sizes.
-var size := value(roundi(Phone.DEFAULT_SIZE * 100))
+var size := value(roundi(FactoryLook.Phone.DEFAULT_SIZE * 100))
 var haptics := value(true)
 ## How many buzzes a tap has asked for, for a test with no motor to feel.
 var buzzes := 0
@@ -56,6 +64,8 @@ var buzzes := 0
 var restart: Callable
 var _app: Node
 var _data: Array
+## The text size as a share, once read or chosen; below zero until then.
+static var _text_size := -1.0
 
 
 func _init(chimes: GdChime.Chimes, app: Node = null, data: Array = []) -> void:
@@ -82,8 +92,8 @@ static func declare(register: GdChime.Actions) -> void:
 ## app's data files to wipe on a reset.
 static func install(app: Node, data: Array) -> Object:
 	var made: Object = app.model((load("res://addons/factory_settings/settings.gd") as GDScript).new(app.chimes, app, data))
-	var saving: GdChime.SettingsFile = app.model(GdChime.SettingsFile.new(app.chimes, Basics.save_file("factory_settings")))
-	saving.keep(Phone.SECTION, made)
+	var saving: GdChime.SettingsFile = app.model(GdChime.SettingsFile.new(app.chimes, Basics.save_file(FILE)))
+	saving.keep(SECTION, made)
 	return made
 
 
@@ -114,7 +124,7 @@ func heard(what: StringName) -> void:
 
 ## The size chosen, told to the look, and the look made again.
 func _sized() -> void:
-	Phone.chosen_size = size.read() / 100.0
+	_text_size = size.read() / 100.0
 	if _app != null and _app.get(&"canvas") != null:
 		_app.canvas.theme = _app.look()
 
@@ -129,7 +139,28 @@ func restore(save: Dictionary) -> void:
 		return
 	size.set_value(clampi(roundi(float(save["text_size"]) * 100), LEAST_SIZE, MOST_SIZE))
 	haptics.set_value(save["haptics"])
-	Phone.chosen_size = size.read() / 100.0
+	_text_size = size.read() / 100.0
+
+
+## The text size a person chose, as a share of gd-chime's sizes, for the
+## app's look(): read from the settings' file the first time - the look is
+## made before any model - and the look's own first size when nothing was
+## chosen, the file won't read, or a probe is walking (its file starts empty).
+static func text_size(path: String = "user://%s.json" % FILE, probing: bool = OS.get_cmdline_user_args().has(Basics.PROBE_SWITCH)) -> float:
+	if _text_size < 0.0:
+		_text_size = FactoryLook.Phone.DEFAULT_SIZE
+		# JSON.parse, not parse_string: a file that won't read is quietly the first size, not an error
+		var reading := JSON.new()
+		if not probing and FileAccess.file_exists(path) and reading.parse(FileAccess.get_file_as_string(path)) == OK:
+			var kept: Variant = reading.data
+			if kept is Dictionary and kept.get(SECTION) is Dictionary and (kept[SECTION].get("text_size") is float or kept[SECTION].get("text_size") is int):
+				_text_size = clampf(kept[SECTION]["text_size"], LEAST_SIZE / 100.0, MOST_SIZE / 100.0)
+	return _text_size
+
+
+## Forget the size read, so the next text_size() reads the file again: for a test.
+static func forget_text_size() -> void:
+	_text_size = -1.0
 
 
 ## The gear that opens the settings, for the first screen's title row.

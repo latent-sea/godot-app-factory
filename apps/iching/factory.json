@@ -1,5 +1,5 @@
 {
   "name": "I Ching",
   "package": "com.latentsea.iching",
-  "services": ["look", "basics", "settings", "testkit"]
+  "services": ["look", "basics", "settings", "shell", "testkit"]
 }

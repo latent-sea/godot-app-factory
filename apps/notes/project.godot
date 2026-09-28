@@ -7,11 +7,11 @@ config_version=5
 
 config/version="0.1.0"
 config/name="Notes"
-run/main_scene="res://addons/factory_look/opening.tscn"
+run/main_scene="res://addons/factory_shell/opening.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
 config/quit_on_go_back=false
-boot_splash/image="res://addons/factory_look/splash.png"
+boot_splash/image="res://addons/factory_shell/splash.png"
 boot_splash/stretch_mode=1
 boot_splash/bg_color=Color(0.07058824, 0.09411765, 0.16078432, 1)
 

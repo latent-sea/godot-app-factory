@@ -1,9 +1,9 @@
-"""Draw the factory's boot image: services/look/splash.png.
+"""Draw the factory's boot image: services/shell/splash.png.
 
 "Latensea" over "PRODUCTIONS" on the navy ground, in Manrope, on a square
 Godot fits to the screen's width (boot_splash/stretch_mode Keep). Godot shows
 it the moment an app starts, while the engine loads; then the opening scene
-(services/look/opening.gd) draws the same image the same way and the wave
+(services/shell/opening.gd) draws the same image the same way and the wave
 under it. Where the wave goes is WAVE_AT in splash.gd, in this image's pixels.
 
 Needs Pillow. Run again after changing the words, the font or the palette:
@@ -16,6 +16,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
+SHELL = ROOT / "services" / "shell"
 LOOK = ROOT / "services" / "look"
 SIDE = 1080
 GROUND = "#121829"
@@ -44,8 +45,8 @@ def main() -> None:
     for letter, width in zip(LINE, widths):
         draw.text((x, LINE_BASE), letter, font=line, fill=INK_SOFT, anchor="ls")
         x += width + SPACING
-    image.save(LOOK / "splash.png", optimize=True)
-    print(f"wrote {LOOK / 'splash.png'}")
+    image.save(SHELL / "splash.png", optimize=True)
+    print(f"wrote {SHELL / 'splash.png'}")
 
 
 if __name__ == "__main__":
