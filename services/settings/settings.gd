@@ -134,7 +134,7 @@ func restore(save: Dictionary) -> void:
 
 ## The gear that opens the settings, for the first screen's title row.
 static func gear(ui: RefCounted) -> GdChime.Desc:
-	return ui.pressable(OPENS, {}, [ui.canvas(_paint_gear, null, GEAR)], FactoryLook.LINK).goes_to(PLACE)
+	return ui.pressable(OPENS, {}, [], GEAR).goes_to(PLACE)
 
 
 ## The settings screen, for the app's stack.
@@ -148,26 +148,9 @@ func screen(ui: RefCounted) -> GdChime.Desc:
 		ui.text(GdChime.Phrase.of("Text size"), GdChime.Themes.FACE),
 		ui.slider(SIZES, size, {"minimum": LEAST_SIZE, "maximum": MOST_SIZE, "step": 5}),
 		GdChime.Setting.row(ui, GdChime.Phrase.of("Haptics"), GdChime.Phrase.of("A small buzz on each tap"), GdChime.Setting.toggle(ui, TURNS_HAPTICS, haptics)),
-		ui.row([FactoryLook.link(ui, ASKS_RESET).opens(reset)]),
+		ui.row([FactoryLook.danger(ui, ASKS_RESET).opens(reset)]),
 		ui.column([]).grow(),
 		ui.text(GdChime.Phrase.of("%s %s" % [name, version]), FactoryLook.QUIET),
 		ui.text(GdChime.Phrase.of("Latensea Productions"), FactoryLook.QUIET),
 	])
 	return ui.screen(PLACE, [FactoryLook.page(ui, [content])], self)
-
-
-## A gear: a ring of teeth round a hole, in the words' colour.
-static func _paint_gear(on: Control, _nothing: Variant) -> void:
-	var side := minf(on.size.x, on.size.y)
-	var centre := on.size / 2.0
-	var outer := side * 0.46
-	var inner := side * 0.34
-	var teeth := 8
-	var points := PackedVector2Array()
-	for step: int in teeth * 4:
-		var angle := TAU * step / (teeth * 4.0)
-		var radius := outer if step % 4 < 2 else inner
-		points.append(centre + Vector2.from_angle(angle) * radius)
-	var ink := on.get_theme_color(&"font_color", GEAR)
-	on.draw_colored_polygon(points, ink)
-	on.draw_circle(centre, side * 0.14, on.get_theme_color(&"hole", GEAR))

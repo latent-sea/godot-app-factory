@@ -6,20 +6,25 @@ extends RefCounted
 ## Look) and its look() returns FactoryLook.make(), or FactoryLook.make(palette) with a palette
 ## of its own. On top of gd-chime's Themes this dresses what gd-chime leaves
 ## as placeholders, and then sizes it all for a phone (phone.gd):
-##   PAGE    the ground a screen stands on, kept off the glass's edges
+##   PAGE    the ground a screen stands on: navy deepening to violet, two pools of light drifting (backdrop.gd)
 ##   Title   a screen's title, bigger than what is under it
 ##   QUIET   words that matter less: a done item, a note
 ##   MARKED  words in the accent: a tick, a small mark
 ##   QUIET and MARKED: MARKED is in the second accent
-##   ACTION  a filled pill in the accent, softly glowing; faded while it can't be used
-##   LINK    words in the accent that go somewhere: no box around them
-##   CARD    a card a shade lighter than the ground, thinly outlined, pressed as a whole
+##   ACTION  a pill in the accent's gradient, softly glowing: the main button
+##   LINK    the same in the second accent's gradient: a lesser button, or one that goes somewhere
+##   DANGER  the same in red: a button that deletes
+##   CARD    a card deepening downwards, its edge from the accent to the second accent
+##   GEAR    the round glowing button that opens settings
+##   (every button is faded while it can't be used)
 ##   Field   a field (and a TextArea) on the raised ground, outlined in the accent while typing
 ##
 ## THE RULES, from using the apps on a phone (docs/look-backlog.md):
 ## - A control that can't be used looks faded and says nothing more. Use
 ##   button() rather than gd-chime's ui.button, which always prints the
 ##   reason under the button, where it reads as a second button.
+## - Every button looks like one: a glowing gradient pill (ACTION, LINK,
+##   DANGER, GEAR), never words alone.
 ##
 ## The builder is taken untyped, as gd-chime's own recipes take it, so a
 ## test can hand in a stand-in.
@@ -28,6 +33,9 @@ extends RefCounted
 
 const Phone := preload("phone.gd")
 const GradientPill := preload("gradient_pill.gd")
+const GradientCard := preload("gradient_card.gd")
+const Backdrop := preload("backdrop.gd")
+const GearButton := preload("gear_button.gd")
 ## Manrope, a geometric sans (SIL Open Font License, fonts/OFL.txt), in its variable form.
 const FONT := preload("fonts/Manrope.ttf")
 ## Its weights: words, and titles.
@@ -41,6 +49,8 @@ const MARKED := &"FactoryMarked"
 const ACTION := &"FactoryAction"
 const LINK := &"FactoryLink"
 const CARD := &"FactoryCard"
+## A button that deletes: red, glowing.
+const DANGER := &"FactoryDanger"
 ## The gear that opens an app's settings (the settings service draws it).
 const GEAR := &"FactoryGear"
 ## Every state gd-chime draws a pressable in (face.gd), and its focus.
@@ -61,6 +71,10 @@ const PALETTE := {
 	&"shade": Color(0.02, 0.03, 0.08, 0.7),
 	&"accent_2": Color("#7c5cff"),
 	&"accent_end": Color("#2fd6e8"),
+	&"accent_2_end": Color("#c46bff"),
+	&"ground_deep": Color("#1c1540"),
+	&"danger": Color("#ff4f7b"),
+	&"danger_end": Color("#ff8f5a"),
 }
 ## Rounded throughout: cards and fields, and buttons as pills.
 const CORNER := 16
@@ -79,11 +93,15 @@ static func make(palette: Dictionary = PALETTE) -> Theme:
 	_field(theme, palette)
 	_action(theme, palette)
 	_link(theme, palette)
+	_danger(theme, palette)
 	_card(theme, palette)
+	_motion(theme)
 	_settings_parts(theme, palette)
 	_sheets(theme, palette)
 	_scroll_bars(theme)
-	Phone.enlarge(theme, Phone.factor())
+	Phone.enlarge(theme, Phone.factor(), Phone.dp_scale())
+	for state: StringName in STATES:
+		(theme.get_stylebox(state, GEAR) as GearButton).side = theme.get_constant(&"least", &"Touch")
 	return theme
 
 
@@ -100,8 +118,11 @@ static func button(ui: RefCounted, action: StringName, payload: Variant = {}) ->
 
 static func _page(theme: Theme, palette: Dictionary) -> void:
 	theme.set_type_variation(PAGE, &"Control")
-	var page_box := StyleBoxFlat.new()
-	page_box.bg_color = palette[&"ground"]
+	var page_box := Backdrop.new()
+	page_box.top = palette[&"ground"]
+	page_box.bottom = palette.get(&"ground_deep", palette[&"ground"])
+	page_box.glow_a = Color(palette[&"accent"], 0.10)
+	page_box.glow_b = Color(second_accent(palette), 0.16)
 	page_box.set_content_margin_all(PAGE_MARGIN)
 	theme.set_stylebox(&"panel", PAGE, page_box)
 
@@ -155,34 +176,69 @@ static func _action(theme: Theme, palette: Dictionary) -> void:
 		theme.set_color(StringName("font_color_" + state), ACTION, faded_words(palette))
 
 
-## Words in the accent with no box. No focus ring: gd-chime puts focus on
-## a screen's first press when it opens, and on a phone the ring reads as a
-## heavy frame round something nobody chose.
+## A second kind of button - going somewhere, or a lesser action beside the
+## main one: a pill in the second accent's gradient, softly glowing, its
+## words white; faded while it can't be used. Never bare words: a button
+## looks like one.
 static func _link(theme: Theme, palette: Dictionary) -> void:
-	theme.set_type_variation(LINK, &"Control")
-	var bare := StyleBoxEmpty.new()
-	bare.set_content_margin_all(8)
-	for state: StringName in STATES + [&"focus"]:
-		theme.set_stylebox(state, LINK, bare)
-	# gd-chime re-inks a press's words only when its box changes (face.gd's
-	# _blend), so the faded states need a box of their own - with one box for
-	# every state, a link built faded (a screen's Back before it is shown) kept
-	# its faded words after it could be used.
-	for state: StringName in [&"inert", &"refusing"]:
-		theme.set_stylebox(state, LINK, bare.duplicate())
+	_glowing(theme, LINK, palette, second_accent(palette), palette.get(&"accent_2_end", second_accent(palette)), Vector2(20, 10))
+
+
+## A button that deletes: the same pill in red.
+static func _danger(theme: Theme, palette: Dictionary) -> void:
+	_glowing(theme, DANGER, palette, palette.get(&"danger", Color.RED), palette.get(&"danger_end", Color.ORANGE_RED), Vector2(24, 14))
+
+
+## A pill of this gradient with a glow of its first colour, brighter while
+## pressed; faded while it can't be used. Each faded state has a box of its
+## own: gd-chime re-inks a press's words only when its box changes (face.gd's
+## _blend), so a button built faded - a screen's Back before it is shown -
+## would otherwise keep its faded words once it could be used.
+static func _glowing(theme: Theme, type: StringName, palette: Dictionary, from: Color, to: Color, margin: Vector2) -> void:
+	theme.set_type_variation(type, GdChime.Themes.PRESSABLE)
 	for state: StringName in STATES:
-		theme.set_color(StringName("font_color_" + state), LINK, palette[&"accent"])
-	theme.set_color(&"font_color_inert", LINK, faded_words(palette))
+		var faded_now := state in [&"inert", &"refusing"]
+		var box: StyleBox
+		if faded_now:
+			var off := _box(faded(palette), PILL, 0)
+			off.border_color = palette[&"lit"]
+			off.set_border_width_all(1)
+			box = off
+		else:
+			var lit := state in [&"hover", &"glowing", &"selected", &"accepting"]
+			var pill := GradientPill.new()
+			pill.from_color = from.lightened(0.12) if lit else from
+			pill.to_color = to.lightened(0.12) if lit else to
+			pill.radius = PILL
+			pill.glow = Color(from, 0.6 if lit else 0.4)
+			pill.glow_size = 12 if lit else 8
+			box = pill
+		box.content_margin_left = margin.x
+		box.content_margin_right = margin.x
+		box.content_margin_top = margin.y
+		box.content_margin_bottom = margin.y
+		theme.set_stylebox(state, type, box)
+		theme.set_color(StringName("font_color_" + state), type, faded_words(palette) if faded_now else Color.WHITE)
+	theme.set_stylebox(&"focus", type, StyleBoxEmpty.new())
 
 
-## A card a shade lighter than the ground, outlined in the lit colour, lit a little while pressed.
+## A card: a fill a shade lighter than the ground, deepening downwards, with
+## an edge running from the accent to the second accent; lit while pressed.
 static func _card(theme: Theme, palette: Dictionary) -> void:
 	theme.set_type_variation(CARD, &"Control")
-	var resting := _box(palette[&"raised"], CORNER, 22)
-	resting.border_color = palette[&"lit"]
-	resting.set_border_width_all(2)
-	var pressed := resting.duplicate() as StyleBoxFlat
-	pressed.bg_color = palette[&"lit"]
+	var resting := GradientCard.new()
+	resting.edge_from = Color(palette[&"accent"], 0.55)
+	resting.edge_to = Color(second_accent(palette), 0.55)
+	resting.edge = 2
+	resting.fill_top = (palette[&"raised"] as Color).lightened(0.04)
+	resting.fill_bottom = palette[&"raised"]
+	resting.radius = CORNER
+	resting.set_content_margin_all(22)
+	var pressed := resting.duplicate() as GradientCard
+	pressed.fill_top = palette[&"lit"]
+	pressed.fill_bottom = (palette[&"lit"] as Color).darkened(0.2)
+	pressed.edge_from = palette[&"accent"]
+	pressed.edge_to = second_accent(palette)
 	for state: StringName in STATES:
 		theme.set_stylebox(state, CARD, pressed if state in [&"hover", &"glowing", &"selected", &"accepting"] else resting)
 		theme.set_color(StringName("font_color_" + state), CARD, palette[&"ink"])
@@ -223,10 +279,22 @@ static func _settings_parts(theme: Theme, palette: Dictionary) -> void:
 		theme.set_color(StringName("font_color_" + state), GdChime.Setting.TOGGLE_OFF, palette[&"ink_soft"])
 	for toggle: StringName in [GdChime.Setting.TOGGLE_ON, GdChime.Setting.TOGGLE_OFF]:
 		theme.set_stylebox(&"focus", toggle, StyleBoxEmpty.new())
-	theme.set_type_variation(GEAR, &"Control")
-	theme.set_color(&"font_color", GEAR, palette[&"ink_soft"])
-	theme.set_color(&"hole", GEAR, palette[&"ground"])
-	theme.set_constant(&"least_height", GEAR, 26)
+	# The gear: a round glowing button, the gear drawn by its box (gear_button.gd).
+	theme.set_type_variation(GEAR, GdChime.Themes.PRESSABLE)
+	for state: StringName in STATES:
+		var lit := state in [&"hover", &"glowing", &"selected", &"accepting"]
+		var gear := GearButton.new()
+		gear.from_color = second_accent(palette).lightened(0.12 if lit else 0.0)
+		gear.to_color = palette[&"accent"].lightened(0.12 if lit else 0.0)
+		gear.radius = 200
+		gear.glow = Color(second_accent(palette), 0.6 if lit else 0.4)
+		gear.glow_size = 12 if lit else 8
+		gear.ink = Color.WHITE
+		gear.hole = second_accent(palette).lerp(palette[&"accent"], 0.5)
+		# an empty button: a finger's least each way (phone.gd) is its size
+		gear.set_content_margin_all(8)
+		theme.set_stylebox(state, GEAR, gear)
+	theme.set_stylebox(&"focus", GEAR, StyleBoxEmpty.new())
 
 
 ## A question asked over everything (gd-chime's Confirm, and a setting's
@@ -249,11 +317,27 @@ static func _sheets(theme: Theme, palette: Dictionary) -> void:
 		theme.set_stylebox(state, button, pressed if state in [&"hover", &"glowing", &"selected", &"accepting"] else resting)
 		theme.set_color(StringName("font_color_" + state), button, palette[&"ink"])
 	theme.set_stylebox(&"focus", button, StyleBoxEmpty.new())
+	# A menu's items (a long press on a row opens one): rows on the card, lit while pressed.
+	var item: StringName = &"MenuItem"
+	var quiet := _box(Color(palette[&"lit"], 0.0), CORNER, 14)
+	quiet.content_margin_left = 24
+	quiet.content_margin_right = 40
+	var lit_item := quiet.duplicate() as StyleBoxFlat
+	lit_item.bg_color = palette[&"lit"]
+	for state: StringName in STATES:
+		theme.set_stylebox(state, item, lit_item if state in [&"hover", &"glowing", &"selected", &"accepting"] else quiet)
+		theme.set_color(StringName("font_color_" + state), item, palette[&"ink"])
+	theme.set_stylebox(&"focus", item, StyleBoxEmpty.new())
 
 
-## Words in the accent that act when pressed, with no box: for going somewhere.
+## A second button (LINK): the second accent's glowing pill, with the action's words.
 static func link(ui: RefCounted, action: StringName, payload: Variant = {}) -> GdChime.Desc:
-	return ui.pressable(action, payload, [ui.text(ui.words(action), MARKED)], LINK)
+	return ui.pressable(action, payload, [ui.text(ui.words(action), GdChime.Themes.FACE)], LINK)
+
+
+## A button that deletes: red and glowing, with the action's words.
+static func danger(ui: RefCounted, action: StringName, payload: Variant = {}) -> GdChime.Desc:
+	return ui.pressable(action, payload, [ui.text(ui.words(action), GdChime.Themes.FACE)], DANGER)
 
 
 ## A card holding content, pressed as a whole.
@@ -273,6 +357,17 @@ static func faded_words(palette: Dictionary) -> Color:
 ## Where a button's gradient ends: the palette's accent_end, or its accent (no gradient) when it has none.
 static func gradient_end(palette: Dictionary) -> Color:
 	return palette.get(&"accent_end", palette[&"accent"])
+
+
+## How the apps move, longer than gd-chime's own so a move is seen: a
+## screen pushes the last one out over a third of a second, and a row of a
+## list slides in from the right and out again (gd-chime's Motion tokens).
+static func _motion(theme: Theme) -> void:
+	theme.set_constant(&"quick", &"Motion", 120)
+	theme.set_constant(&"normal", &"Motion", 320)
+	theme.set_constant(&"slow", &"Motion", 520)
+	theme.set_constant(&"stagger", &"Motion", 50)
+	GdChime.Transition.defaults(theme, {&"each": GdChime.Transition.FROM_RIGHT})
 
 
 ## Manrope for every word, bolder for titles and headings.

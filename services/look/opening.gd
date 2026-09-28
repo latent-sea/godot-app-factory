@@ -14,6 +14,7 @@ extends Control
 ## A probe (`-- --probe`) gets the app at once and no loading screen.
 
 const Splash := preload("splash.gd")
+const Enliven := preload("enliven.gd")
 ## The app this opens.
 const APP := "res://main.tscn"
 ## The least the wave shows, even if the app loads sooner; then the fade.
@@ -48,7 +49,7 @@ func _process(delta: float) -> void:
 	if app == null and ResourceLoader.load_threaded_get_status(APP) == ResourceLoader.THREAD_LOAD_LOADED:
 		_open((ResourceLoader.load_threaded_get(APP) as PackedScene).instantiate())
 		# under the cover, which still shows
-		move_child(app, 0)
+		move_child(cover, -1)
 	if app != null and _waited >= LEAST:
 		_faded = true
 		cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -60,3 +61,8 @@ func _process(delta: float) -> void:
 func _open(made: Node) -> void:
 	app = made
 	add_child(app)
+	# after the app, so it hears a finger before the app does (enliven.gd)
+	var alive := Enliven.new()
+	alive.name = "Enliven"
+	alive.app = app
+	add_child(alive)

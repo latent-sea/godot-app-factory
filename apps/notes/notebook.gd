@@ -18,6 +18,8 @@ const REWRITES := &"rewrites_a_note"
 const PINS := &"pins_a_note"
 const COPIES := &"copies_a_note"
 const DELETES := &"deletes_a_note"
+## Deletes the note open in the editor, and leaves the editor.
+const DELETES_OPEN := &"deletes_the_open_note"
 const SEARCHES := &"searches_the_notes"
 const PICKS_TAG := &"picks_a_tag"
 
@@ -45,7 +47,7 @@ func _init(chimes: GdChime.Chimes, door: Object = null, edit_place: StringName =
 
 
 func answers() -> Array[StringName]:
-	return [ADDS, OPENS, RETITLES, REWRITES, PINS, COPIES, DELETES, SEARCHES, PICKS_TAG]
+	return [ADDS, OPENS, RETITLES, REWRITES, PINS, COPIES, DELETES, DELETES_OPEN, SEARCHES, PICKS_TAG]
 
 
 func would(action: StringName, payload: Dictionary) -> GdChime.Phrase:
@@ -53,7 +55,7 @@ func would(action: StringName, payload: Dictionary) -> GdChime.Phrase:
 		OPENS, DELETES:
 			if index_of(payload.get("id")) < 0:
 				return GdChime.Phrase.of("That note is gone")
-		RETITLES, REWRITES, PINS:
+		RETITLES, REWRITES, PINS, DELETES_OPEN:
 			if index_of(editing.read()) < 0:
 				return GdChime.Phrase.of("No note is open")
 		COPIES:
@@ -93,6 +95,14 @@ func told(action: StringName, payload: Dictionary) -> GdChime.Phrase:
 			return null
 		DELETES:
 			list.remove_at(index_of(payload["id"]))
+		DELETES_OPEN:
+			list.remove_at(index_of(editing.read()))
+			notes.set_value(list)
+			editing.set_value(null)
+			# out of the editor once the question asked first has come down
+			if _door != null:
+				_door.dispatch.call_deferred(GdChime.Chimes.GLOBAL, GdChime.Driver.GOES_BACK, {})
+			return null
 		SEARCHES:
 			search.set_value(str(payload.get("line", "")))
 			return null

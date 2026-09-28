@@ -52,6 +52,13 @@ const FORCE_SWITCH := "--phone-dp="
 ## How many times bigger this screen needs the look: 1 on a desktop,
 ## about 1.7 on a phone 411 dp across at the first text size (2.6 at full size).
 static func factor() -> float:
+	return clampf(dp_scale() * text_size(), 1.0, 4.0)
+
+
+## Base pixels per dp: how much bigger the screen needs anything measured in
+## dp, whatever the text size - a finger is the same size at every text size.
+## 1 on a desktop, about 2.6 on a phone 411 dp across.
+static func dp_scale() -> float:
 	var short_dp := _forced_short_dp()
 	if short_dp <= 0.0:
 		if not OS.has_feature("mobile"):
@@ -61,7 +68,7 @@ static func factor() -> float:
 		if dpi <= 0.0:
 			return 1.0
 		short_dp = minf(screen.x, screen.y) / (dpi / DP_PER_INCH)
-	return clampf(CANVAS_SHORT_SIDE / short_dp * text_size(), 1.0, 4.0)
+	return clampf(CANVAS_SHORT_SIDE / short_dp, 1.0, 4.0)
 
 
 ## The share of gd-chime's sizes a person chose, read from Settings' file
@@ -78,7 +85,11 @@ static func text_size() -> float:
 
 
 ## The look, every size in it multiplied by `by`.
-static func enlarge(theme: Theme, by: float) -> void:
+## A finger's least is FINGER dp at `finger` base pixels per dp (dp_scale()),
+## which is `by` unless said: at a small text size, words shrink but a
+## finger doesn't.
+static func enlarge(theme: Theme, by: float, finger: float = by) -> void:
+	theme.set_constant(&"least", &"Touch", roundi(FINGER * finger))
 	if is_equal_approx(by, 1.0):
 		return
 	theme.default_font_size = _times(theme.default_font_size, by)
@@ -95,8 +106,6 @@ static func enlarge(theme: Theme, by: float) -> void:
 			if box != null and not enlarged.has(box.get_instance_id()):
 				enlarged[box.get_instance_id()] = true
 				_enlarge_box(box, by)
-	# `by` is base pixels per dp, so a finger's 48 dp is this many base pixels.
-	theme.set_constant(&"least", &"Touch", roundi(FINGER * by))
 
 
 static func _enlarge_box(box: StyleBox, by: float) -> void:

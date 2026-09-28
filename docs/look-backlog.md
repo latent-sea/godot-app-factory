@@ -91,3 +91,38 @@ yet take the accent.
   The main scene is `opening.tscn`, which draws the same image in the same
   place with the wave moving while `main.tscn` loads on another thread,
   then fades to the app. A probe gets the app at once.
+
+## Rule: every button looks like a button
+
+- **Asked:** 28 Sep 2026: "I don't like buttons that look like labels/words.
+  Make them different colour with glow." and "I see no gradients."
+- **Done:**
+  - Every button is a glowing gradient pill. ACTION is teal, LINK (lesser
+    buttons: Back, New note, Pin, Copy, Prompts) is violet, and DANGER is red.
+    The gear is a round glowing button.
+  - Cards have an edge running teal to violet. Titles are a teal-to-violet
+    gradient (a shader, `enliven.gd`).
+  - The page ground deepens from navy to violet, with two slowly drifting
+    pools of light (`backdrop.gd`).
+
+## Fixed: the gear didn't always answer a tap
+
+- **Cause:** the text-size setting scaled the touch minimum along with the
+  words, so every button's least size fell from 48 dp to about 31 dp. The
+  gear, with no words, fell to a sliver of that.
+- **Done:** the touch minimum is always 48 dp (`Phone.dp_scale()`), and the
+  gear's box asks for a finger-sized square. The probe now taps the gear as
+  a finger does and checks its size.
+
+## Added: animation and long press
+
+- Screens push each other over 0.32 s, and list rows slide in from the right
+  and out again (gd-chime's Motion tokens, set in the look).
+- A button shrinks as it is touched and springs back as it is let go.
+- A finger held on a row for half a second opens the row's menu (Open,
+  Delete). gd-chime has no long press, so `enliven.gd` turns one into the
+  right press gd-chime's menus open on.
+- Words on a button sit in its middle, since buttons are a finger tall.
+- **Seen in renders:** gd-chime skips animations while frames run long,
+  as on this software-rendered desktop. Stepping its clock by hand shows
+  the push working.

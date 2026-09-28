@@ -75,7 +75,63 @@ func run() -> void:
 	var kept: Variant = JSON.parse_string(FileAccess.get_file_as_string(app.saving.get_file_path()))
 	var saved: Array = [] if kept == null else kept.get("notes", {}).get("notes", [])
 	claim("the notes are saved as they change", saved.size() == 1 and saved[0]["title"] == "Moving" and saved[0]["pinned"])
+
+	# A button answers the finger: it shrinks as it is touched, and springs back.
+	var add := pressable(Notebook.ADDS)
+	await _finger(add, true)
+	await frames(8)
+	claim("a touched button shrinks", add.scale.x < 0.99)
+	await _finger(add, false)
+	await app.get_tree().create_timer(0.5).timeout
+	claim("and springs back as it is let go", is_equal_approx(add.scale.x, 1.0))
+	claim("New note opened the editor", top() == &"edit")
+	await _back()
+
+	# A long press on a note opens its menu - Open, Delete - and doesn't open the note.
+	await press(Notebook.ADDS)
+	type_into(fields()[0], "Groceries")
+	await frames()
+	await _back()
+	var alive: Node = app.get_parent().get_node("Enliven")
+	var row := _row("Groceries")
+	await _hold(row)
+	claim("a long press is a long press", alive.long_presses == 1)
+	claim("it opens the note's menu, and not the note", top() != &"edit" and top() != &"list" and shows("Delete") and shows("Open"))
+	for item: Control in app.find_children("*", "Control", true, false):
+		if item is GdChime.Pressable and item.is_visible_in_tree() and _words_in(item) == ["Delete"]:
+			item.pressed()
+			break
+	await frames(6)
+	claim("Delete in the menu deletes the note", _titles() == ["Moving"] and top() == &"list")
+
+	# Delete in the editor asks first, then deletes and leaves.
+	await _open("Moving")
+	await press(&"asks_to_delete_the_note")
+	claim("Delete note asks first", shows_part("can't be undone") and app.notebook.notes.read().size() == 1)
+	await press(Notebook.DELETES_OPEN)
+	await frames(8)
+	claim("then deletes the note", app.notebook.notes.read().is_empty())
+	claim("and goes back to the list", top() == &"list" and _titles().is_empty())
 	finish()
+
+
+## A finger landing on, or lifting from, the middle of a control, as the engine hands it in.
+func _finger(on: Control, down: bool) -> void:
+	var at := window_point(on.get_global_rect().get_center())
+	var touch := InputEventScreenTouch.new()
+	touch.index = 0
+	touch.position = at
+	touch.pressed = down
+	Input.parse_input_event(touch)
+	await frames(2)
+
+
+## A finger held still on a control past a long press, then lifted.
+func _hold(on: Control) -> void:
+	await _finger(on, true)
+	await app.get_tree().create_timer(0.8).timeout
+	await _finger(on, false)
+	await frames(6)
 
 
 ## The notes' rows, top to bottom, by the title each shows.
