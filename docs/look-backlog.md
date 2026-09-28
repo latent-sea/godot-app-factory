@@ -83,8 +83,11 @@ yet take the accent.
 
 - **Asked:** 27 Sep 2026, "Latensea Productions" and a loading animation
   when an app opens, instead of a blank screen.
-- **Done:** `FactoryLook.splash(self)` in describe(). It shows the name and a
-  teal-to-violet wave on the navy ground for 1.6 s, then fades to the app
-  (`services/look/splash.gd`). Godot's own boot splash stays plain navy, so
-  the phone goes navy, then the name and wave, then the app. A probe gets
-  no splash.
+- **First try, wrong:** the screen was built by the app itself, so it only
+  appeared once the app had loaded, flashed for a second, and left the
+  blank wait as it was.
+- **Done:** Godot's boot splash is now the name (`services/look/splash.png`,
+  drawn by `tooling/make_splash.py`), shown the moment the engine starts.
+  The main scene is `opening.tscn`, which draws the same image in the same
+  place with the wave moving while `main.tscn` loads on another thread,
+  then fades to the app. A probe gets the app at once.

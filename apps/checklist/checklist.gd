@@ -41,7 +41,6 @@ func declare(register: GdChime.Actions) -> void:
 
 func describe() -> GdChime.Desc:
 	list = Items.new(chimes)
-	FactoryLook.splash(self)
 	Basics.answer_back(self)
 	saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("checklist", saved_at)))
 	saving.keep("checklist", list)

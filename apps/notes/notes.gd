@@ -98,7 +98,6 @@ func declare(register: GdChime.Actions) -> void:
 
 func describe() -> GdChime.Desc:
 	notebook = Notebook.new(chimes, commands, EDIT)
-	FactoryLook.splash(self)
 	Basics.answer_back(self)
 	saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("notes", saved_at)))
 	saving.keep("notes", notebook)
