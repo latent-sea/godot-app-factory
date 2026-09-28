@@ -71,6 +71,9 @@ func _init() -> void:
 	_claim(theme.get_stylebox(&"inert", Look.LINK) != theme.get_stylebox(&"normal", Look.LINK), "a faded link has a box of its own, so its words are inked again once it can be used")
 	var card := theme.get_stylebox(&"normal", Look.CARD) as Look.GradientCard
 	_claim(card != null and card.fill_bottom == Look.PALETTE[&"raised"] and card.edge_from.to_html(false) == Look.PALETTE[&"accent"].to_html(false) and card.edge_to.to_html(false) == Look.PALETTE[&"accent_2"].to_html(false), "a card is raised, its edge from the accent to the second accent")
+	_claim(theme.get_constant(&"press_scale", &"Motion") < 1000, "a button gives under a finger (gd-chime's press scale)")
+	_claim(theme.get_constant(&"moves", Look.PAGE) != 0, "the page's ground moves on gd-chime's clock")
+	_claim(theme.get_color(&"gradient_from", GdChime.Themes.TITLE) != theme.get_color(&"gradient_to", GdChime.Themes.TITLE), "a title's words are graded between two colours")
 	_claim(theme.get_constant(&"normal", &"Motion") >= 300 and theme.get_constant(&"each", &"Motion") == GdChime.Transition.KINDS.find(GdChime.Transition.FROM_RIGHT), "moves last long enough to be seen, and a list's rows slide")
 	# Faded must read as off: dimmer than a usable button's words, whatever the palette.
 	var usable_words: Color = theme.get_color(&"font_color_normal", Look.ACTION)

@@ -7,7 +7,7 @@ extends RefCounted
 ## of its own. On top of gd-chime's Themes this dresses what gd-chime leaves
 ## as placeholders, and then sizes it all for a phone (phone.gd):
 ##   PAGE    the ground a screen stands on: navy deepening to violet, two pools of light drifting (backdrop.gd)
-##   Title   a screen's title, bigger than what is under it
+##   Title   a screen's title, bigger than what is under it, its words graded teal to violet
 ##   QUIET   words that matter less: a done item, a note
 ##   MARKED  words in the accent: a tick, a small mark
 ##   QUIET and MARKED: MARKED is in the second accent
@@ -127,10 +127,15 @@ static func _page(theme: Theme, palette: Dictionary) -> void:
 	page_box.glow_b = Color(second_accent(palette), 0.16)
 	page_box.set_content_margin_all(PAGE_MARGIN)
 	theme.set_stylebox(&"panel", PAGE, page_box)
+	# its pools of light drift: gd-chime draws it again as its clock moves on
+	theme.set_constant(&"moves", PAGE, 1)
 
 
 static func _words(theme: Theme, palette: Dictionary) -> void:
 	theme.set_font_size(&"font_size", GdChime.Themes.TITLE, TITLE_SIZE)
+	# a title's words graded from the accent's end to the second accent, lightened (gd-chime draws it)
+	theme.set_color(&"gradient_from", GdChime.Themes.TITLE, gradient_end(palette))
+	theme.set_color(&"gradient_to", GdChime.Themes.TITLE, second_accent(palette).lightened(0.3))
 	theme.set_type_variation(QUIET, GdChime.Themes.FACE)
 	theme.set_color(&"font_color", QUIET, palette[&"ink_soft"])
 	theme.set_type_variation(MARKED, GdChime.Themes.FACE)
@@ -192,10 +197,7 @@ static func _danger(theme: Theme, palette: Dictionary) -> void:
 
 
 ## A pill of this gradient with a glow of its first colour, brighter while
-## pressed; faded while it can't be used. Each faded state has a box of its
-## own: gd-chime re-inks a press's words only when its box changes (face.gd's
-## _blend), so a button built faded - a screen's Back before it is shown -
-## would otherwise keep its faded words once it could be used.
+## pressed; faded while it can't be used.
 static func _glowing(theme: Theme, type: StringName, palette: Dictionary, from: Color, to: Color, margin: Vector2) -> void:
 	theme.set_type_variation(type, GdChime.Themes.PRESSABLE)
 	for state: StringName in STATES:
@@ -370,6 +372,8 @@ static func _motion(theme: Theme) -> void:
 	theme.set_constant(&"slow", &"Motion", 520)
 	theme.set_constant(&"stagger", &"Motion", 50)
 	GdChime.Transition.defaults(theme, {&"each": GdChime.Transition.FROM_RIGHT})
+	# a button gives a little under a finger, and springs back as it lifts
+	theme.set_constant(&"press_scale", &"Motion", 940)
 
 
 ## Manrope for every word, bolder for titles and headings.
