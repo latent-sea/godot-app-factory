@@ -60,10 +60,18 @@ func _init() -> void:
 	_claim(focus != null and focus.border_color == Look.PALETTE[&"accent"], "a field being typed in is outlined in the accent")
 
 	_claim(theme.get_stylebox(&"focus", Look.LINK) is StyleBoxEmpty and theme.get_stylebox(&"focus", Look.CARD) is StyleBoxEmpty, "links and cards draw no focus frame")
-	_claim(theme.get_stylebox(&"normal", Look.LINK) is StyleBoxEmpty, "a link has no box")
+	for kind: StringName in [Look.LINK, Look.DANGER]:
+		var lesser := theme.get_stylebox(&"normal", kind) as Look.GradientPill
+		_claim(lesser != null and lesser.glow.a > 0.0 and lesser.from_color != lesser.to_color, "a %s is a glowing gradient pill, never bare words" % kind)
+		_claim(theme.get_stylebox(&"inert", kind) is StyleBoxFlat, "and faded while it can't be used")
+	_claim((theme.get_stylebox(&"normal", Look.LINK) as Look.GradientPill).from_color == Look.PALETTE[&"accent_2"], "a lesser button is in the second accent")
+	_claim(theme.get_stylebox(&"normal", Look.GEAR) is Look.GearButton, "the gear is a round button that draws its gear itself")
+	var backdrop := theme.get_stylebox(&"panel", Look.PAGE) as Look.Backdrop
+	_claim(backdrop != null and backdrop.top == Look.PALETTE[&"ground"] and backdrop.bottom == Look.PALETTE[&"ground_deep"], "the page deepens from navy to violet")
 	_claim(theme.get_stylebox(&"inert", Look.LINK) != theme.get_stylebox(&"normal", Look.LINK), "a faded link has a box of its own, so its words are inked again once it can be used")
-	var card := theme.get_stylebox(&"normal", Look.CARD) as StyleBoxFlat
-	_claim(card != null and card.bg_color == Look.PALETTE[&"raised"] and card.border_color == Look.PALETTE[&"lit"], "a card is raised, outlined in the lit colour")
+	var card := theme.get_stylebox(&"normal", Look.CARD) as Look.GradientCard
+	_claim(card != null and card.fill_bottom == Look.PALETTE[&"raised"] and card.edge_from.to_html(false) == Look.PALETTE[&"accent"].to_html(false) and card.edge_to.to_html(false) == Look.PALETTE[&"accent_2"].to_html(false), "a card is raised, its edge from the accent to the second accent")
+	_claim(theme.get_constant(&"normal", &"Motion") >= 300 and theme.get_constant(&"each", &"Motion") == GdChime.Transition.KINDS.find(GdChime.Transition.FROM_RIGHT), "moves last long enough to be seen, and a list's rows slide")
 	# Faded must read as off: dimmer than a usable button's words, whatever the palette.
 	var usable_words: Color = theme.get_color(&"font_color_normal", Look.ACTION)
 	var off_words: Color = Look.faded_words(Look.PALETTE)

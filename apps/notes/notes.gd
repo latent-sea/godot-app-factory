@@ -18,8 +18,9 @@ const Walk := preload("res://probe.gd")
 const LIST := &"list"
 const EDIT := &"edit"
 
-## A press that only goes somewhere: no model handles it.
+## Presses that only go somewhere: no model handles them.
 const GOES_BACK := &"goes_back"
+const ASKS_DELETE := &"asks_to_delete_the_note"
 
 ## A tag to choose, and the tag chosen.
 const TAG := &"NoteTag"
@@ -91,6 +92,8 @@ func declare(register: GdChime.Actions) -> void:
 		Notebook.PINS: ["Pin"],
 		Notebook.COPIES: ["Copy"],
 		Notebook.DELETES: ["Delete"],
+		Notebook.DELETES_OPEN: ["Delete"],
+		ASKS_DELETE: ["Delete note"],
 		Notebook.SEARCHES: ["Search"],
 		Notebook.PICKS_TAG: ["Tag"],
 		GOES_BACK: ["‹ Notes", GdChime.Actions.keys(KEY_ESCAPE)],
@@ -100,7 +103,9 @@ func declare(register: GdChime.Actions) -> void:
 
 
 func describe() -> GdChime.Desc:
-	notebook = Notebook.new(chimes, commands, EDIT)
+	# App-wide, not a screen's: the editor's Delete is confirmed in a pop-up
+	# standing over every screen, and only an app-wide model hears it there.
+	notebook = model(Notebook.new(chimes, commands, EDIT))
 	Basics.answer_back(self)
 	saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("notes", saved_at)))
 	saving.keep("notes", notebook)
@@ -135,7 +140,7 @@ func _list_screen() -> GdChime.Desc:
 		ui.row([ui.text(empty, FactoryLook.QUIET).wraps().hides_empty().grow()]),
 		ui.scroll(ui.each(rows, _row, func(row: Dictionary) -> String: return row["key"], NOTE_LIST), null, &"down").grow(),
 	])
-	return ui.screen(LIST, [FactoryLook.page(ui, [content])], notebook)
+	return ui.screen(LIST, [FactoryLook.page(ui, [content])])
 
 
 ## A tag to choose: pressed, only its notes show; pressed again, every note.
@@ -180,17 +185,18 @@ func _edit_screen() -> GdChime.Desc:
 	var head := ui.row([
 		FactoryLook.link(ui, GOES_BACK).goes_to(GdChime.Driver.BACK),
 		ui.column([]).grow(),
-		ui.pressable(Notebook.PINS, {}, [ui.text(pin_words, FactoryLook.MARKED)], FactoryLook.LINK),
-		ui.pressable(Notebook.COPIES, {}, [ui.text(copy_words, FactoryLook.MARKED)], FactoryLook.LINK),
+		ui.pressable(Notebook.PINS, {}, [ui.text(pin_words, GdChime.Themes.FACE)], FactoryLook.LINK),
+		ui.pressable(Notebook.COPIES, {}, [ui.text(copy_words, GdChime.Themes.FACE)], FactoryLook.LINK),
 	])
 	var content := ui.column([
 		head,
 		ui.text(stamp, FactoryLook.QUIET),
 		ui.field(Notebook.RETITLES, GdChime.Fields.FIELD, {"changes": Notebook.RETITLES, "shows": title}),
 		ui.area(Notebook.REWRITES, text).grow(),
+		ui.row([FactoryLook.danger(ui, ASKS_DELETE).opens(GdChime.Confirm.make(ui, GdChime.Phrase.of("Delete this note? This can't be undone."), Notebook.DELETES_OPEN))]),
 	])
 	var closing := func() -> void: notebook.drop_if_empty()
-	return ui.screen(EDIT, [FactoryLook.page(ui, [content])], notebook, {"on_empty": closing})
+	return ui.screen(EDIT, [FactoryLook.page(ui, [content])], null, {"on_empty": closing})
 
 
 func probe() -> RefCounted:

@@ -22,6 +22,9 @@ const GLOW_RINGS := 4
 
 
 func _draw(to_canvas_item: RID, rect: Rect2) -> void:
+	# too small to have a shape: nothing to draw
+	if rect.size.x < 2.0 or rect.size.y < 2.0:
+		return
 	if glow.a > 0.0 and glow_size > 0.0:
 		for ring: int in range(GLOW_RINGS, 0, -1):
 			var grown := rect.grow(glow_size * ring / GLOW_RINGS)
@@ -55,5 +58,11 @@ static func outline(rect: Rect2, corner: float) -> PackedVector2Array:
 	for corner_at: Array in corners:
 		for step: int in CORNER_POINTS + 1:
 			var angle: float = corner_at[1] + PI * 0.5 * step / CORNER_POINTS
-			points.append(corner_at[0] + Vector2(cos(angle), sin(angle)) * r)
+			var point: Vector2 = corner_at[0] + Vector2(cos(angle), sin(angle)) * r
+			# where a side has no length (a circle, a pill's ends) two corners meet
+			# at one point: the same point twice is no polygon the engine can fill
+			if points.is_empty() or not point.is_equal_approx(points[-1]):
+				points.append(point)
+	if points.size() > 1 and points[0].is_equal_approx(points[-1]):
+		points.remove_at(points.size() - 1)
 	return points

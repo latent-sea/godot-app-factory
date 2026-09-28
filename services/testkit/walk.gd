@@ -163,9 +163,12 @@ func walk_settings() -> void:
 	claim("there is a gear for settings", gear != null)
 	if gear == null:
 		return
-	gear.pressed()
+	var finger: int = app.canvas.theme.get_constant(&"least", &"Touch")
+	claim("the gear is a finger's size each way", gear.size.x >= finger and gear.size.y >= finger)
+	# A real tap in the middle, as a finger lands: a drawing laid over the gear once took these.
+	await tap(gear, gear.size / 2.0)
 	await frames(4)
-	claim("the gear opens settings", top() == &"settings")
+	claim("a tap in the middle of the gear opens settings", top() == &"settings")
 	claim("settings say what the app is", shows_part(str(ProjectSettings.get_setting("application/config/name"))) and shows("Latensea Productions"))
 	var worn: Theme = app.canvas.theme
 	app.commands.dispatch(&"settings", &"sizes_the_words", {"value": 80.0})

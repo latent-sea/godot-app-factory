@@ -32,6 +32,9 @@ func _init() -> void:
 	_claim(big.get_constant(&"letters", &"Notice") == plain.get_constant(&"letters", &"Notice"), "a count of letters does not")
 	_claim(big.get_constant(&"lines", &"Notice") == plain.get_constant(&"lines", &"Notice"), "a count of lines does not")
 	_claim(big.get_constant(&"least", &"Touch") == roundi(PhoneLook.FINGER * 2.5), "a pressable is at least a finger each way")
+	var small_words := GdChime.Themes.new(Look.PALETTE)
+	PhoneLook.enlarge(small_words, 1.6, 2.5)
+	_claim(small_words.get_constant(&"least", &"Touch") == roundi(PhoneLook.FINGER * 2.5) and small_words.get_font_size(&"font_size", &"Face") == roundi(plain.get_font_size(&"font_size", &"Face") * 1.6), "smaller words keep a finger's target (a small text size once shrank the gear's)")
 	_claim(is_equal_approx(shared.get_content_margin(SIDE_LEFT), 25.0) and shared.get_corner_radius(CORNER_TOP_LEFT) == 10, "a stylebox shared by two types grows once: %s" % shared.get_content_margin(SIDE_LEFT))
 
 	var untouched := GdChime.Themes.new(Look.PALETTE)

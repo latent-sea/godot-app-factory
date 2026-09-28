@@ -28,7 +28,8 @@ func _init() -> void:
 		await process_frame
 		waited += 1
 	_claim(opening.app is ChimeApp, "the app loads: %s" % [opening.app])
-	_claim(opening.get_child(0) == opening.app and is_instance_valid(opening.cover), "under the loading screen, which still shows")
+	_claim(opening.get_child(0) == opening.app and opening.get_child(-1) == opening.cover, "under the loading screen, which still shows")
+	_claim(opening.get_node_or_null("Enliven") != null, "and livened (enliven.gd)")
 	await create_timer(Opening.LEAST + Opening.FADE + 0.3).timeout
 	_claim(not is_instance_valid(opening.cover), "then the loading screen fades away")
 	_claim(opening.app.size == Vector2(root.size), "the app fills the screen: %s" % opening.app.size)
@@ -38,7 +39,7 @@ func _init() -> void:
 	var probed := Opening.new()
 	probed.probing = true
 	root.add_child(probed)
-	_claim(probed.cover == null and probed.app is ChimeApp and probed.get_child_count() == 1, "a probe gets the app at once, and no loading screen")
+	_claim(probed.cover == null and probed.app is ChimeApp and probed.find_children("*", "Control", false, false).size() == 1, "a probe gets the app at once, and no loading screen")
 	for frame: int in 3:
 		await process_frame
 	root.remove_child(probed)
