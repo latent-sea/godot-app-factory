@@ -2,8 +2,10 @@ extends StyleBox
 
 ## The ground every screen stands on: navy deepening to violet down the
 ## screen, and two soft pools of light - the accent and the second accent -
-## drifting slowly across it. The drift reads the clock as it draws, so it
-## moves only while something redraws the page every frame (the shell service does).
+## drifting slowly across it. gd-chime draws a ground whose style sets the
+## moves constant again as its one clock moves on, handing it the clock's
+## time: so it holds still under reduced motion, over the frame budget, and
+## in a test or screenshot that steps the clock by hand.
 
 ## The ground at the top and at the bottom.
 @export var top := Color.BLACK
@@ -13,6 +15,8 @@ extends StyleBox
 @export var glow_b := Color.TRANSPARENT
 ## How many seconds one drift round takes.
 @export var period := 24.0
+## The clock's time as gd-chime draws it, in seconds (surface.gd sets it).
+var time := 0.0
 
 static var _pool: GradientTexture2D
 
@@ -20,7 +24,7 @@ static var _pool: GradientTexture2D
 func _draw(to_canvas_item: RID, rect: Rect2) -> void:
 	var corners := PackedVector2Array([rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)])
 	RenderingServer.canvas_item_add_polygon(to_canvas_item, corners, PackedColorArray([top, top, bottom, bottom]))
-	var turn := TAU * fmod(Time.get_ticks_msec() / 1000.0, period) / period
+	var turn := TAU * fmod(time, period) / period
 	var reach := maxf(rect.size.x, rect.size.y) * 0.45
 	_glow(to_canvas_item, rect, Vector2(0.25 + 0.15 * sin(turn), 0.2 + 0.08 * cos(turn * 2.0)), reach, glow_a)
 	_glow(to_canvas_item, rect, Vector2(0.8 + 0.12 * cos(turn), 0.75 + 0.1 * sin(turn)), reach * 1.1, glow_b)

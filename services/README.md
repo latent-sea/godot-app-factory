@@ -15,7 +15,7 @@ installs it (`tooling/check_app.py`).
 | [look](look/look.gd) | Appearance only: the Theme, gd-chime's dressed and sized for phones, at the text size it is handed (D-004, D-007) | nothing |
 | [basics](basics/basics.gd) | Android's Back button, and where an app's data is saved (a probe always gets its own file) | nothing |
 | [settings](settings/settings.gd) | The gear and Settings screen every app has: text size, haptics, reset app data, about (D-008) | look, basics |
-| [shell](shell/opening.gd) | How an app runs as a Latensea app: the opening scene and loading screen, and enliven.gd - gradient titles, the drifting ground, a press's spring, long press (D-009) | look |
+| [shell](shell/opening.gd) | How an app runs as a Latensea app: the opening scene and the loading screen (D-009) | look |
 | [testkit](testkit/walk.gd) | What a probe is made of: presses, taps, swipes, reading the screen, claims and the PROBE OK report; never exported | settings |
 
 A service says what it needs in its `service.json` (`{"needs": ["look"]}`).

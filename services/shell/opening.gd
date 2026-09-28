@@ -14,7 +14,6 @@ extends Control
 ## A probe (`-- --probe`) gets the app at once and no loading screen.
 
 const Splash := preload("splash.gd")
-const Enliven := preload("enliven.gd")
 ## The app this opens.
 const APP := "res://main.tscn"
 ## The least the wave shows, even if the app loads sooner; then the fade.
@@ -61,8 +60,3 @@ func _process(delta: float) -> void:
 func _open(made: Node) -> void:
 	app = made
 	add_child(app)
-	# after the app, so it hears a finger before the app does (enliven.gd)
-	var alive := Enliven.new()
-	alive.name = "Enliven"
-	alive.app = app
-	add_child(alive)

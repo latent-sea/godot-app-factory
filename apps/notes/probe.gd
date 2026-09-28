@@ -92,10 +92,8 @@ func run() -> void:
 	type_into(fields()[0], "Groceries")
 	await frames()
 	await _back()
-	var alive: Node = app.get_parent().get_node("Enliven")
 	var row := _row("Groceries")
 	await _hold(row)
-	claim("a long press is a long press", alive.long_presses == 1)
 	claim("it opens the note's menu, and not the note", top() != &"edit" and top() != &"list" and shows("Delete") and shows("Open"))
 	for item: Control in app.find_children("*", "Control", true, false):
 		if item is GdChime.Pressable and item.is_visible_in_tree() and _words_in(item) == ["Delete"]:

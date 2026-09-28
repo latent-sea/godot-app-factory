@@ -22,7 +22,9 @@ all confirmed:
   other. So the app composes, and the look and Settings don't know each
   other.
 - **A shell service.** It holds how an app runs as a Latensea app: the
-  opening scene and loading screen, and `enliven.gd`.
+  opening scene and loading screen, and `enliven.gd`. (Since then
+  everything enliven.gd did has moved into gd-chime, as the rule below
+  asks; see docs/look-backlog.md.)
 - **Nothing only a test needs is exported.** An app loads its probe only
   when walked. The export preset leaves out `probe.gd` and the testkit,
   and `export_android.py` fails an APK that carries them.

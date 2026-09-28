@@ -127,23 +127,26 @@ yet take the accent.
   as on this software-rendered desktop. Stepping its clock by hand shows
   the push working.
 
-## gd-chime candidates (D-009's rule: would an unrelated gd-chime app need it?)
+## Moved into gd-chime (T-615, gd-chime 886d9d9)
 
-These live in the factory as workarounds, but look general. Changing
-gd-chime needs the owner's approval, so they are listed, not done:
-- **Long press** is missing. Touch apps want a held finger to open a
-  row's menu; `shell/enliven.gd` turns one into a right press.
-- **Words on a press sit at the top** of a press taller than they are.
-  Any app with finger-sized buttons would want them centred
-  (`enliven.gd` does it).
-- **A press re-inks its words only when its box changes**, so a press
-  that shares one box across states keeps its faded words (`look.gd`
-  gives faded states a box of their own).
+The factory asked gd-chime for six things; all landed, and `shell/enliven.gd`
+is gone. The factory now only sets the tokens:
+- **Long press** opens a row's menu (Touch `long_press`, 500 ms by default).
+- **A press gives under a finger** (Motion `press_scale`: the look sets 940).
+- **Words sit in the middle of a press** taller than them (gd-chime's default).
+- **A press re-inks its words** on a state change even when its box is the same.
+- **Gradient words** from the Theme (`gradient_from` / `gradient_to` on Title).
+- **A ground that moves** on gd-chime's clock (`moves` on the page's type;
+  `backdrop.gd` draws at the time it is handed). It holds still under
+  reduced motion, over the frame budget, and when a test steps the clock.
+
+Not yet: a buzz on a long press. gd-chime rings its `held` bell but hangs it
+for no one, and the settings service can't hang it without clashing in tests.
+
+## Still gd-chime candidates (not asked for yet)
+
 - **Screen density.** gd-chime's sizes are for a monitor, and every phone
   app would need them scaled (`look/phone.gd`, D-007).
 - **Scroll reserves a scrollbar strip** even when there are no bars,
   making the right margin wider (`look.gd` empties the bars).
-
-The Latensea look itself (glowing gradient pills, the drifting ground,
-the loading screen) is not a candidate. Every Latensea app uses it, but
-an unrelated gd-chime app would not.
+- **A question's cancel is "Close"**, where "Cancel" reads better.
