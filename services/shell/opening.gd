@@ -2,7 +2,7 @@ extends Control
 
 ## An app's first scene: the loading screen at once, the app loaded behind
 ## it, then the screen faded away. project.godot names this scene
-## (res://addons/factory_look/opening.tscn) as the main scene; the app itself
+## (res://addons/factory_shell/opening.tscn) as the main scene; the app itself
 ## stays res://main.tscn.
 ##
 ## THE ORDER A PHONE SEES: Godot's boot splash (the name, splash.png) while

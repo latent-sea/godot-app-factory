@@ -72,7 +72,7 @@ created app on every run).
   list's "New note" is in the title row for this reason).
 - A pressable's style can be a bound value (`Bound` reading a type name),
   which is how a chosen tag chip changes look.
-- An app's main scene is the look service's `opening.tscn`, which loads
+- An app's main scene is the shell service's `opening.tscn`, which loads
   the app's own `main.tscn` behind the loading screen. Run `main.tscn`
   directly in the editor to skip it.
 - Settings come with the template: `Settings.declare(register)` in declare,
@@ -80,3 +80,8 @@ created app on every run).
   SettingsFile, the gear (`Settings.gear(ui)`) in the first screen's title
   row, and `settings.screen(ui)` in the stack. A probe walks it with
   `await walk_settings()` from the screen with the gear.
+- An app's `look()` hands the look the text size Settings keeps:
+  `FactoryLook.make(FactoryLook.PALETTE, Settings.text_size())`. The look
+  never reads it itself (D-009).
+- An app loads its probe only when walked (`load("res://probe.gd")` in
+  `probe()`), so an export can leave the probe and the testkit out.

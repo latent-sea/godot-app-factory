@@ -126,3 +126,24 @@ yet take the accent.
 - **Seen in renders:** gd-chime skips animations while frames run long,
   as on this software-rendered desktop. Stepping its clock by hand shows
   the push working.
+
+## gd-chime candidates (D-009's rule: would an unrelated gd-chime app need it?)
+
+These live in the factory as workarounds, but look general. Changing
+gd-chime needs the owner's approval, so they are listed, not done:
+- **Long press** is missing. Touch apps want a held finger to open a
+  row's menu; `shell/enliven.gd` turns one into a right press.
+- **Words on a press sit at the top** of a press taller than they are.
+  Any app with finger-sized buttons would want them centred
+  (`enliven.gd` does it).
+- **A press re-inks its words only when its box changes**, so a press
+  that shares one box across states keeps its faded words (`look.gd`
+  gives faded states a box of their own).
+- **Screen density.** gd-chime's sizes are for a monitor, and every phone
+  app would need them scaled (`look/phone.gd`, D-007).
+- **Scroll reserves a scrollbar strip** even when there are no bars,
+  making the right margin wider (`look.gd` empties the bars).
+
+The Latensea look itself (glowing gradient pills, the drifting ground,
+the loading screen) is not a candidate. Every Latensea app uses it, but
+an unrelated gd-chime app would not.

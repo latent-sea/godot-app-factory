@@ -13,7 +13,6 @@ const Basics := preload("res://addons/factory_basics/basics.gd")
 const Settings := preload("res://addons/factory_settings/settings.gd")
 const T := preload("res://note_text.gd")
 const Notebook := preload("res://notebook.gd")
-const Walk := preload("res://probe.gd")
 
 const LIST := &"list"
 const EDIT := &"edit"
@@ -45,9 +44,10 @@ var settings: Settings
 
 ## The factory's look, with a tag's chip and a month's heading.
 func look() -> Theme:
-	var theme := FactoryLook.make()
+	var size := Settings.text_size()
+	var theme := FactoryLook.make(FactoryLook.PALETTE, size)
 	var palette := FactoryLook.PALETTE
-	var grow := FactoryLook.Phone.factor()
+	var grow := FactoryLook.Phone.factor(size)
 	var resting := StyleBoxFlat.new()
 	resting.bg_color = palette[&"raised"]
 	resting.border_color = palette[&"lit"]
@@ -200,4 +200,5 @@ func _edit_screen() -> GdChime.Desc:
 
 
 func probe() -> RefCounted:
-	return Walk.new(self)
+	# loaded only when walked, so a release leaves the probe and the testkit out
+	return (load("res://probe.gd") as GDScript).new(self)

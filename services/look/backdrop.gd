@@ -3,7 +3,7 @@ extends StyleBox
 ## The ground every screen stands on: navy deepening to violet down the
 ## screen, and two soft pools of light - the accent and the second accent -
 ## drifting slowly across it. The drift reads the clock as it draws, so it
-## moves only while something redraws the page every frame (enliven.gd does).
+## moves only while something redraws the page every frame (the shell service does).
 
 ## The ground at the top and at the bottom.
 @export var top := Color.BLACK

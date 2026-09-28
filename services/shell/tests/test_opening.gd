@@ -3,10 +3,10 @@ extends SceneTree
 ## opening.gd and splash.gd: the loading screen is up at once, the app loads
 ## under it, then the screen fades away; a probe gets the app with no loading
 ## screen; and the name lands where Godot's boot splash put it.
-## Prints PASS test_splash.gd, or every claim that did not hold.
+## Prints PASS test_opening.gd, or every claim that did not hold.
 
-const Opening := preload("res://addons/factory_look/opening.gd")
-const Splash := preload("res://addons/factory_look/splash.gd")
+const Opening := preload("res://addons/factory_shell/opening.gd")
+const Splash := preload("res://addons/factory_shell/splash.gd")
 
 var _failed: Array[String] = []
 
@@ -48,7 +48,7 @@ func _init() -> void:
 	for sentence: String in _failed:
 		print("NOT TRUE: %s" % sentence)
 	if _failed.is_empty():
-		print("PASS test_splash.gd")
+		print("PASS test_opening.gd")
 	quit(0 if _failed.is_empty() else 1)
 
 

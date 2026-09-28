@@ -84,8 +84,10 @@ const PAGE_MARGIN := 24
 const TITLE_SIZE := 44
 
 
-## The whole look, sized for the screen it runs on.
-static func make(palette: Dictionary = PALETTE) -> Theme:
+## The whole look, sized for the screen it runs on and the text size asked
+## for (a share of gd-chime's sizes: Phone.DEFAULT_SIZE unless the app hands
+## in what a person chose).
+static func make(palette: Dictionary = PALETTE, text_size: float = Phone.DEFAULT_SIZE) -> Theme:
 	var theme := GdChime.Themes.new(palette)
 	_type(theme)
 	_page(theme, palette)
@@ -99,7 +101,7 @@ static func make(palette: Dictionary = PALETTE) -> Theme:
 	_settings_parts(theme, palette)
 	_sheets(theme, palette)
 	_scroll_bars(theme)
-	Phone.enlarge(theme, Phone.factor(), Phone.dp_scale())
+	Phone.enlarge(theme, Phone.factor(text_size), Phone.dp_scale())
 	for state: StringName in STATES:
 		(theme.get_stylebox(state, GEAR) as GearButton).side = theme.get_constant(&"least", &"Touch")
 	return theme

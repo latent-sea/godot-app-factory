@@ -16,7 +16,6 @@ const Cast := preload("res://cast.gd")
 const PromptList := preload("res://prompts.gd")
 const Copying := preload("res://copying.gd")
 const Drawing := preload("res://drawing.gd")
-const Walk := preload("res://probe.gd")
 
 const CAST := &"cast"
 const RESULT := &"result"
@@ -45,9 +44,10 @@ var settings: Settings
 
 
 func look() -> Theme:
-	var theme := FactoryLook.make()
+	var size := Settings.text_size()
+	var theme := FactoryLook.make(FactoryLook.PALETTE, size)
 	var palette := FactoryLook.PALETTE
-	var grow := FactoryLook.Phone.factor()
+	var grow := FactoryLook.Phone.factor(size)
 	theme.set_type_variation(Drawing.HEXAGRAM, &"Control")
 	theme.set_color(&"line", Drawing.HEXAGRAM, palette[&"ink"])
 	theme.set_color(&"faint", Drawing.HEXAGRAM, palette[&"lit"])
@@ -224,4 +224,5 @@ func _blank(name: GdChime.Bound) -> GdChime.Desc:
 
 
 func probe() -> RefCounted:
-	return Walk.new(self)
+	# loaded only when walked, so a release leaves the probe and the testkit out
+	return (load("res://probe.gd") as GDScript).new(self)
