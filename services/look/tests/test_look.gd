@@ -41,7 +41,7 @@ func _init() -> void:
 	_claim(theme.get_font(&"font", GdChime.Themes.TITLE) != theme.default_font, "titles have a font of their own, bolder")
 	var room := theme.get_stylebox(&"panel", &"Scroll")
 	_claim(room != null and room.content_margin_left == room.content_margin_right, "a list keeps equal room either side")
-	_claim(theme.get_constant(&"thickness", &"ScrollIndicator") > 0, "where the reader is in a list shows")
+	_claim(theme.get_constant(&"thickness", &"ScrollIndicator") > 0 and theme.get_constant(&"stays", &"ScrollIndicator") == 1, "where the reader is in a list shows, and stays while there is more")
 	var pill := Look.GradientPill.new()
 	pill.radius = 10.0
 	pill.glow_size = 4.0

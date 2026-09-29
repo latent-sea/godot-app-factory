@@ -394,10 +394,13 @@ static func weighted(weight: int) -> FontVariation:
 
 ## Where the reader is in a list or a long text: gd-chime's mark over its
 ## right padding, a little thicker than its default and in the accent, so it
-## is seen on a phone. It takes no room, so margins stay equal either side.
+## is seen on a phone, and there whenever there is more than is shown - not
+## only while scrolling - so a person can tell there is more. It takes no
+## room, so margins stay equal either side.
 static func _scroll_indicator(theme: Theme, palette: Dictionary) -> void:
 	theme.set_constant(&"thickness", &"ScrollIndicator", 6)
 	theme.set_constant(&"inset", &"ScrollIndicator", 3)
+	theme.set_constant(&"stays", &"ScrollIndicator", 1)
 	theme.set_color(&"colour", &"ScrollIndicator", Color(palette[&"accent"], 0.85))
 
 
