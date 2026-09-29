@@ -1,0 +1,106 @@
+# Throwaway experiment: the smallest Supabase that answers "can Godot talk to it?".
+# Database, auth (email codes), data API and realtime - no gateway, dashboard,
+# storage or functions. Images from Supabase's own registry, versions as in
+# supabase/supabase docker/docker-compose.yml at 177ef0c.
+name: spike
+
+services:
+  db:
+    image: public.ecr.aws/supabase/postgres:17.6.1.136
+    volumes:
+      - ./db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
+      - ./db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
+      - ./db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
+      - ./db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
+      - ./db/_supabase.sql:/docker-entrypoint-initdb.d/migrations/97-_supabase.sql:Z
+      - ./db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:Z
+      - ./app.sql:/docker-entrypoint-initdb.d/migrations/99-zz-app.sql:Z
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 3s
+      retries: 20
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      PGPORT: 5432
+      POSTGRES_PORT: 5432
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: postgres
+      POSTGRES_DB: postgres
+      JWT_EXP: 3600
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf", "-c", "log_min_messages=fatal"]
+    ports: ["54322:5432"]
+
+  auth:
+    image: public.ecr.aws/supabase/gotrue:v2.196.0
+    depends_on:
+      db: {condition: service_healthy}
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: http://localhost:9999
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      GOTRUE_SITE_URL: http://localhost
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "false"
+      GOTRUE_SMTP_ADMIN_EMAIL: codes@latent-sea.test
+      GOTRUE_SMTP_HOST: host.docker.internal
+      GOTRUE_SMTP_PORT: 2500
+      GOTRUE_SMTP_USER: ""
+      GOTRUE_SMTP_PASS: ""
+      GOTRUE_SMTP_SENDER_NAME: Latensea
+      GOTRUE_SMTP_MAX_FREQUENCY: 1s
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: "1000"
+      # both first sign-up and later sign-ins send the code, not a link
+      GOTRUE_MAILER_TEMPLATES_CONFIRMATION: http://host.docker.internal:8081/code.html
+      GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: http://host.docker.internal:8081/code.html
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: Your Latensea sign-in code
+      GOTRUE_MAILER_SUBJECTS_MAGIC_LINK: Your Latensea sign-in code
+      GOTRUE_MAILER_OTP_EXP: 600
+    ports: ["9999:9999"]
+
+  rest:
+    image: public.ecr.aws/supabase/postgrest:v14.17
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+    ports: ["3000:3000"]
+
+  realtime:
+    # realtime reads its tenant from the host name, as behind the official gateway
+    hostname: realtime-dev.supabase-realtime
+    image: public.ecr.aws/supabase/realtime:v2.134.10
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: postgres
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: ${REALTIME_DB_ENC_KEY}
+      API_JWT_SECRET: ${JWT_SECRET}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      METRICS_JWT_SECRET: ${JWT_SECRET}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      DNS_NODES: "''"
+      RLIMIT_NOFILE: "10000"
+      APP_NAME: realtime
+      SEED_SELF_HOST: "true"
+      RUN_JANITOR: "true"
+    ports: ["4000:4000"]
