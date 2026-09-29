@@ -8,6 +8,7 @@ const H := preload("res://hexagrams.gd")
 const Cast := preload("res://cast.gd")
 const PromptList := preload("res://prompts.gd")
 const Copying := preload("res://copying.gd")
+const Drawing := preload("res://drawing.gd")
 
 
 func run() -> void:
@@ -34,7 +35,8 @@ func run() -> void:
 	var sentence := H.sentence(lines)
 	claim("the result says the cast in one sentence", shows(sentence))
 	claim("the result shows the question", shows("Should I move?"))
-	claim("the first hexagram is numbered", shows("Hexagram %d" % H.number(H.first(lines))))
+	claim("the first hexagram is drawn, numbered", _hexagrams().size() >= 1 and Drawing.caption(lines) == "Hexagram %d" % H.number(H.first(lines)))
+	claim("it fills its room: each hexagram at least a third of the screen's width", _hexagrams().all(func(part: Control) -> bool: return part.size.x >= app.get_viewport().get_visible_rect().size.x / 3.0))
 
 	# Copy with no prompt: the question, then the cast.
 	await _open_copy()
@@ -96,6 +98,12 @@ func run() -> void:
 func _open_copy() -> void:
 	await press(&"opens_the_copy_drawer")
 	await frames(4)
+
+
+## The hexagrams drawn on the result.
+func _hexagrams() -> Array:
+	return app.find_children("*", "Control", true, false).filter(func(part: Node) -> bool:
+		return part.get_script() != null and part.theme_type_variation == Drawing.HEXAGRAM and (part as Control).is_visible_in_tree())
 
 
 func _square() -> Control:

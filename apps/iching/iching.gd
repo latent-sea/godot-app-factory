@@ -52,6 +52,9 @@ func look() -> Theme:
 	theme.set_color(&"line", Drawing.HEXAGRAM, palette[&"ink"])
 	theme.set_color(&"faint", Drawing.HEXAGRAM, palette[&"lit"])
 	theme.set_color(&"mark", Drawing.HEXAGRAM, FactoryLook.second_accent(palette))
+	theme.set_color(&"caption", Drawing.HEXAGRAM, palette[&"ink_soft"])
+	theme.set_color(&"arrow", Drawing.HEXAGRAM, palette[&"accent"])
+	theme.set_constant(&"caption_size", Drawing.HEXAGRAM, theme.get_font_size(&"font_size", FactoryLook.QUIET))
 	theme.set_constant(&"least_height", Drawing.HEXAGRAM, roundi(HEXAGRAM_HEIGHT * grow))
 	theme.set_type_variation(&"SmallHexagram", Drawing.HEXAGRAM)
 	theme.set_constant(&"least_height", &"SmallHexagram", roundi(SMALL_HEXAGRAM_HEIGHT * grow))
@@ -115,26 +118,22 @@ func _cast_screen() -> GdChime.Desc:
 		ui.text(GdChime.Phrase.of("Question (optional)"), FactoryLook.QUIET),
 		ui.field(Cast.ASKS, GdChime.Fields.FIELD, {"changes": Cast.ASKS, "shows": cast.question}),
 		ui.text(progress, GdChime.Themes.FACE),
-		ui.canvas(Drawing.hexagram, cast.lines, &"SmallHexagram"),
+		# The hexagram as it builds and the square share the room left equally.
+		ui.canvas(Drawing.hexagram, cast.lines, &"SmallHexagram").grow(),
 		ui.pinned(Drawing.square, null, [], {"points": [], "picks": Cast.CASTS, "hit": Drawing.cell_at, "style": Drawing.SQUARE}).grow(),
 	])
 	return ui.screen(CAST, [FactoryLook.page(ui, [content])], cast)
 
 
 func _result_screen(drawer: GdChime.Desc) -> GdChime.Desc:
-	var changes: GdChime.Bound = cast.lines.map(func(lines: Variant) -> bool: return lines is Array and not H.changing_positions(lines).is_empty())
 	var turned: GdChime.Bound = cast.lines.map(func(lines: Variant) -> Array:
 		return [] if not (lines is Array) or lines.size() < H.LINES else H.changed(lines).map(func(yang: bool) -> int: return H.YOUNG_YANG if yang else H.YOUNG_YIN))
 	var sentence: GdChime.Bound = cast.lines.map(func(_lines: Variant) -> String: return cast.sentence())
-	var first_number: GdChime.Bound = cast.lines.map(func(lines: Variant) -> String:
-		return "" if not (lines is Array) or lines.size() < H.LINES else "Hexagram %d" % H.number(H.first(lines)))
-	var turned_number: GdChime.Bound = turned.map(func(lines: Variant) -> String:
-		return "" if not (lines is Array) or lines.size() < H.LINES else "Hexagram %d" % H.number(H.first(lines)))
-	var original := ui.column([ui.canvas(Drawing.hexagram, cast.lines, Drawing.HEXAGRAM), ui.text(first_number, GdChime.Themes.REASON)])
-	var becomes := ui.column([ui.canvas(Drawing.hexagram, turned, Drawing.HEXAGRAM), ui.text(turned_number, GdChime.Themes.REASON)])
-	var pictures := ui.when(changes,
-		ui.row([original.grow(), ui.text("→", GdChime.Themes.TITLE), becomes.grow()]),
-		ui.row([original.grow()]))
+	# The cast and what it changes to, each numbered, as large as the room left holds.
+	var pair: GdChime.Bound = GdChime.Bound.both(cast.lines, turned, func(lines: Variant, changed: Variant) -> Array:
+		# nothing changing: the cast stands alone
+		return [lines, changed if lines is Array and not H.changing_positions(lines).is_empty() else []])
+	var pictures := ui.canvas(Drawing.cast_and_change, pair, Drawing.HEXAGRAM).grow()
 	# Long words wrap only in a row that gives them the width to grow into.
 	var copy_card := FactoryLook.card(ui, OPENS_COPY, [
 		ui.row([ui.text(sentence, GdChime.Themes.FACE).wraps().grow()]),
@@ -145,7 +144,6 @@ func _result_screen(drawer: GdChime.Desc) -> GdChime.Desc:
 		ui.row([ui.text(cast.question, FactoryLook.QUIET).wraps().hides_empty().grow()]),
 		pictures,
 		copy_card,
-		ui.column([]).grow(),
 		FactoryLook.button(ui, Cast.CASTS_AGAIN),
 	])
 	var fresh := func(_token: Variant) -> void: copying.start(cast.question.read())
@@ -189,7 +187,8 @@ func _edit_screen() -> GdChime.Desc:
 		ui.text(GdChime.Phrase.of("Name"), FactoryLook.QUIET),
 		ui.field(PromptList.RENAMES, GdChime.Fields.FIELD, {"changes": PromptList.RENAMES, "shows": name}),
 		ui.row([ui.text(GdChime.Phrase.of("Prompt: {question} is your question; any other {name} is filled in when you copy."), FactoryLook.QUIET).wraps().grow()]),
-		ui.area(PromptList.REWRITES, text),
+		# The prompt takes the rest of the screen, and scrolls inside itself past that.
+		ui.area(PromptList.REWRITES, text).grow(),
 	])
 	var closing := func() -> void: prompt_list.drop_if_empty()
 	return ui.screen(EDIT, [FactoryLook.page(ui, [content])], prompt_list, {"on_empty": closing})
