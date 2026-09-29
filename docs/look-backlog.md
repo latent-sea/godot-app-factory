@@ -22,8 +22,14 @@ yet take the accent.
 - **Seen:** on the phone, 27 Sep 2026: the margins either side weren't equal.
 - **Cause:** gd-chime's scroll always reserves room for a vertical scroll
   bar, so list rows stopped short on the right.
-- **Fixed:** the look gives scroll bars no size; lists are swiped, as on any
+- **Fixed:** the look gave scroll bars no size; lists are swiped, as on any
   phone. Measured in a render: 63 px either side.
+- **Fixed properly in gd-chime 4e454ab** (asked for 29 Sep 2026, when a long
+  prompt in I Ching showed no sign of more below). A scroll keeps equal room
+  either side, and where the reader is shows as a thin mark over the right
+  padding that takes no room. Text areas get the same mark. The look no
+  longer hides anything; it makes the mark 6 base pixels thick and in the
+  accent.
 
 ## Rule: a disabled control just looks faded, with no reason shown
 
@@ -147,6 +153,4 @@ for no one, and the settings service can't hang it without clashing in tests.
 
 - **Screen density.** gd-chime's sizes are for a monitor, and every phone
   app would need them scaled (`look/phone.gd`, D-007).
-- **Scroll reserves a scrollbar strip** even when there are no bars,
-  making the right margin wider (`look.gd` empties the bars).
 - **A question's cancel is "Close"**, where "Cancel" reads better.

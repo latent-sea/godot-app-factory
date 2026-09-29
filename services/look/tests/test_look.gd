@@ -39,8 +39,9 @@ func _init() -> void:
 	_claim(usable is Look.GradientPill and usable.from_color == Look.PALETTE[&"accent"] and usable.to_color == Look.PALETTE[&"accent_end"], "a usable button is a gradient from the accent to its end")
 	_claim(theme.default_font is FontVariation and (theme.default_font as FontVariation).base_font == Look.FONT, "every word is in the factory's font")
 	_claim(theme.get_font(&"font", GdChime.Themes.TITLE) != theme.default_font, "titles have a font of their own, bolder")
-	var bar_track := theme.get_stylebox(&"scroll", &"VScrollBar")
-	_claim(bar_track is StyleBoxEmpty and bar_track.get_minimum_size().x == 0.0, "scroll bars take no room")
+	var room := theme.get_stylebox(&"panel", &"Scroll")
+	_claim(room != null and room.content_margin_left == room.content_margin_right, "a list keeps equal room either side")
+	_claim(theme.get_constant(&"thickness", &"ScrollIndicator") > 0, "where the reader is in a list shows")
 	var pill := Look.GradientPill.new()
 	pill.radius = 10.0
 	pill.glow_size = 4.0

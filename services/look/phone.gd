@@ -31,6 +31,7 @@ const PIXELS: Array[StringName] = [
 	&"slop", &"compact_below", &"wide_from", &"dead_band",
 	&"line_width", &"marker_radius", &"tick_width", &"outline_width",
 	&"picked_width", &"hatch_gap", &"thick", &"step",
+	&"thickness", &"inset", &"least_length",
 ]
 ## How big the look is against gd-chime's monitor sizes once the screen's
 ## smallness is made up: 0.65 unless the app says otherwise (the app hands in
