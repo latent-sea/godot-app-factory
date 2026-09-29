@@ -100,7 +100,7 @@ static func make(palette: Dictionary = PALETTE, text_size: float = Phone.DEFAULT
 	_motion(theme)
 	_settings_parts(theme, palette)
 	_sheets(theme, palette)
-	_scroll_bars(theme)
+	_scroll_indicator(theme, palette)
 	Phone.enlarge(theme, Phone.factor(text_size), Phone.dp_scale())
 	for state: StringName in STATES:
 		(theme.get_stylebox(state, GEAR) as GearButton).side = theme.get_constant(&"least", &"Touch")
@@ -392,13 +392,13 @@ static func weighted(weight: int) -> FontVariation:
 	return font
 
 
-## No scroll bars: on a phone a list is swiped, and a bar's reserved strip
-## made a list's right margin wider than its left (gd-chime's scroll always
-## reserves one).
-static func _scroll_bars(theme: Theme) -> void:
-	for bar: StringName in [&"VScrollBar", &"HScrollBar"]:
-		for part: StringName in [&"scroll", &"scroll_focus", &"grabber", &"grabber_highlight", &"grabber_pressed"]:
-			theme.set_stylebox(part, bar, StyleBoxEmpty.new())
+## Where the reader is in a list or a long text: gd-chime's mark over its
+## right padding, a little thicker than its default and in the accent, so it
+## is seen on a phone. It takes no room, so margins stay equal either side.
+static func _scroll_indicator(theme: Theme, palette: Dictionary) -> void:
+	theme.set_constant(&"thickness", &"ScrollIndicator", 6)
+	theme.set_constant(&"inset", &"ScrollIndicator", 3)
+	theme.set_color(&"colour", &"ScrollIndicator", Color(palette[&"accent"], 0.85))
 
 
 ## The second accent: the palette's accent_2, or the first accent when it has none.
