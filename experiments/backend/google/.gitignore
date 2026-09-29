@@ -1,0 +1,7 @@
+addons/google_sign_in/bin/
+android/
+plugin_src/local.properties
+plugin_src/**/build/
+plugin_src/.gradle/
+supa.gd
+*.apk
