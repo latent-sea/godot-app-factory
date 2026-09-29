@@ -11,10 +11,11 @@ app, and CI doesn't look at it. It stays as the starting point for the real
 
 | | |
 | --- | --- |
-| `supa.gd` | The client, one per device. It handles an emailed sign-in code or an anonymous sign-in, reading and writing a table, and live inserts. Live inserts use a WebSocket speaking Phoenix channels, the protocol Supabase Realtime uses. |
+| `supa.gd` | The client, one per device. It handles sign-in by emailed code, anonymously or with a Google token, reading and writing a table, and live inserts. Live inserts use a WebSocket speaking Phoenix channels, the protocol Supabase Realtime uses. |
 | `app.sql` | The one table, `notes`. Row-level security lets only the note's owner see it, and it is published for live updates. |
 | `local/` | The test against a Supabase running on this machine. It signs in by emailed code, reading each code from a local mail catcher. |
 | `phone/` | The same checks as an Android app ("Backend Test"), run against the hosted project. |
+| `google/` | Google sign-in as an Android app ("Google Test"). A small Android add-on opens the phone's own account picker; Supabase turns Google's answer into a player. |
 
 ## What was checked
 
@@ -37,10 +38,16 @@ stranger's checks then failed.
 
 All checks passed everywhere.
 
+**Google sign-in, on a phone.** All four checks passed:
+1. The account picker gave the app a Google token.
+2. Supabase accepted the token as a player.
+3. That player saved a note.
+4. The player read the note back.
+
 ## Running it again
 
 The client is shared, so first copy it into whichever project you run:
-`cp supa.gd local/` or `cp supa.gd phone/`.
+`cp supa.gd local/`, `phone/` or `google/`.
 
 **Local.**
 1. Copy the database's first-start scripts into `local/db/` from
@@ -63,6 +70,17 @@ The client is shared, so first copy it into whichever project you run:
 **Phone.** Open `phone/` in Godot 4.6 and export for Android. The internet
 permission is already on.
 
+**Google.** Write `google/plugin_src/local.properties` with
+`sdk.dir=<Android SDK>`, then run `google/build.sh`. It builds the add-on,
+installs Godot's Android build template and exports `googletest.apk`. The
+paths to Godot, Gradle and the SDK at its top are this machine's. Google's
+side is set up in the Latensea Google Cloud project:
+- an **Android client** for package `com.latentsea.supatest` and the SHA-1
+  of `tooling/android/debug.keystore`;
+- a **Web client**, whose ID is `GOOGLE_WEB_CLIENT_ID` in `google/main.gd`
+  and in Supabase's Google provider, with its secret;
+- while the project is in testing, your account on the **test users** list.
+
 ## What we learned on the way
 
 - Supabase's default emails contain only a link. A code sign-in needs a
@@ -71,5 +89,17 @@ permission is already on.
   sender (custom SMTP). That is why the phone test signs in anonymously.
 - Auth refuses a second code to the same address within its send interval.
 - A live channel needs a moment after joining before changes arrive.
+- Google sign-in needs an Android add-on, and an add-on needs Godot's
+  Gradle build rather than the prebuilt one:
+  - It stores the engine uncompressed unless the preset turns on
+    `gradle_build/compress_native_libraries`.
+  - Even compressed, a debug export is 31 MB against 26 MB for release.
+- Google sees only the SHA-256 of the nonce, and Supabase gets the raw
+  nonce and checks the two match. So a token can't be replayed.
+- The Web client's ID goes to both the add-on and Supabase. The Android
+  client is only registered (package plus signing key) and never
+  appears in code.
+- Maven Central sometimes answers 429 (too many requests). Google's mirror
+  of it doesn't.
 - Realtime only sends a change to someone whose row-level security lets
   them read it. The privacy rule is written once, on the table.

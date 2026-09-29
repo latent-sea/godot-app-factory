@@ -44,6 +44,9 @@ showed plain GDScript is enough:
 - **One player on two devices** received their own notes live, in 83–283 ms
   locally and 724 ms on a phone against the hosted project.
 - **A stranger** neither received nor could read them.
+- **Google sign-in** on a phone worked, through the phone's own account
+  picker. The one native part is a small Android add-on (Credential Manager),
+  which means apps using it are built with Godot's Gradle build.
 
 **Alternatives.**
 - **Firebase.** Its Godot clients are plugins, and it can't be self-hosted.
@@ -56,7 +59,6 @@ showed plain GDScript is enough:
   secure.
 
 **Not yet proven.**
-- **Google sign-in on Android** needs a plugin.
 - **Emailed codes on the hosted plan** need an email sender and its DNS
   records.
 - **Steam sign-in**, **deletion across apps**, and **load at Lizarding's

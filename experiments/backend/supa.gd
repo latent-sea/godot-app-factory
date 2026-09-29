@@ -53,6 +53,18 @@ func sign_in_anonymously() -> bool:
 	return true
 
 
+## Exchange a Google ID token (from the native account picker) for a Supabase
+## session. `nonce` is the raw nonce; Google saw its SHA-256. Returns [ok, status, body].
+func sign_in_with_google_token(id_token: String, nonce: String) -> Array:
+	var result := await _call(HTTPClient.METHOD_POST, auth_url + "/token?grant_type=id_token", {"provider": "google", "id_token": id_token, "nonce": nonce})
+	if result[0] != 200 or not (result[1] is Dictionary) or not result[1].has("access_token"):
+		push_warning("google sign-in failed: %s" % [result])
+		return [false, result[0], result[1]]
+	access_token = result[1]["access_token"]
+	user_id = result[1]["user"]["id"]
+	return [true, result[0], result[1]]
+
+
 ## The same player on another device: this session's token, shared.
 func same_player_as(other: Node) -> void:
 	access_token = other.access_token
