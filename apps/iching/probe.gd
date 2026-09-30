@@ -70,6 +70,20 @@ func run() -> void:
 	await press(PromptList.OPENS)
 	claim("tapping a prompt opens it", top() == &"edit_prompt")
 	claim("the editor holds its name", fields()[0].text == "Adviser")
+
+	# A long prompt scrolls under a finger, and the swipe selects nothing.
+	var kept: String = written["text"]
+	var long := ""
+	for line: int in 40:
+		long += "Line %d of a long prompt about {question}.\n" % line
+	type_into_area(long)
+	await frames()
+	var area := _area()
+	await swipe_up(area)
+	claim("a swipe up a long prompt scrolls it", area.scroll_vertical > 0.0)
+	claim("and selects nothing", not area.has_selection())
+	type_into_area(kept)
+	await frames()
 	await _press_link(&"goes_back")
 	await _press_link(&"goes_back")
 	claim("back from the list returns to the result", top() == &"result")
@@ -98,6 +112,14 @@ func run() -> void:
 func _open_copy() -> void:
 	await press(&"opens_the_copy_drawer")
 	await frames(4)
+
+
+## The prompt's text area, as the engine draws it.
+func _area() -> TextEdit:
+	for part: Node in app.find_children("*", "TextEdit", true, false):
+		if (part as Control).is_visible_in_tree():
+			return part
+	return null
 
 
 ## The hexagrams drawn on the result.

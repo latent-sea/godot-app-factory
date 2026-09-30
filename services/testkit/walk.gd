@@ -128,8 +128,16 @@ static func in_square(on: Control, share: Vector2) -> Vector2:
 ## A finger drawn from a control's right edge towards its left, most of its width: a swipe left.
 func swipe_left(on: Control) -> void:
 	var area := on.get_global_rect()
-	var from := Vector2(area.end.x - 8.0, area.get_center().y)
-	var to := Vector2(area.position.x + area.size.x * 0.2, from.y)
+	await _swipe(Vector2(area.end.x - 8.0, area.get_center().y), Vector2(area.position.x + area.size.x * 0.2, area.get_center().y))
+
+
+## A finger drawn up a control, from near its foot to near its head, down its middle: a swipe up, to scroll.
+func swipe_up(on: Control) -> void:
+	var area := on.get_global_rect()
+	await _swipe(Vector2(area.get_center().x, area.end.y - area.size.y * 0.15), Vector2(area.get_center().x, area.position.y + area.size.y * 0.15))
+
+
+func _swipe(from: Vector2, to: Vector2) -> void:
 	_touch(from, true)
 	await frames(1)
 	var steps := 12

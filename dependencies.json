@@ -4,7 +4,7 @@
   },
   "gd_chime": {
     "repo": "https://github.com/latent-sea/gd-chime",
-    "commit": "4e454ab81a7fc96de36dd14529fac900fc3c539a",
+    "commit": "09eeb7cc087e032df9e027db88a1124619826683",
     "copy": "addons/gd_chime"
   }
 }
