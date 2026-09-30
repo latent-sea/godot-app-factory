@@ -29,7 +29,11 @@ yet take the accent.
   either side, and where the reader is shows as a thin mark over the right
   padding that takes no room. Text areas get the same mark. The look no
   longer hides anything; it makes the mark 6 base pixels thick and in the
-  accent.
+  accent, and keeps it shown while there is more.
+- **Then, gd-chime 09eeb7c** (asked 30 Sep 2026): a finger drawn up a text
+  area selected words instead of scrolling it, and the mark couldn't be
+  grabbed. Now a swipe scrolls a text area as it does a list, and the mark
+  can be dragged. The I Ching probe swipes a long prompt and checks it moved.
 
 ## Rule: a disabled control just looks faded, with no reason shown
 
