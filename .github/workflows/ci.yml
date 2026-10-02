@@ -64,6 +64,14 @@ jobs:
           python3 tooling/install.py ci_scratch
           python3 tooling/check_app.py ci_scratch --godot ~/godot/godot
 
+      # No app installs the backend yet: check it, tests and all, in a fresh one.
+      - name: Check the backend service in a fresh app
+        run: |
+          python3 tooling/create_app.py ci_backend
+          python3 -c "import json, pathlib; p = pathlib.Path('apps/ci_backend/factory.json'); d = json.loads(p.read_text()); d['services'].append('backend'); p.write_text(json.dumps(d))"
+          python3 tooling/install.py ci_backend
+          python3 tooling/check_app.py ci_backend --godot ~/godot/godot
+
   android:
     needs: check
     runs-on: ubuntu-24.04
