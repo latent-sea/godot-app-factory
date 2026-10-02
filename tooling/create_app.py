@@ -83,6 +83,8 @@ def create(root: Path, name: str, title: str | None = None, template: Path = TEM
         # A scene node's name: the title without spaces.
         "{{node}}": title.replace(" ", ""),
     }
+    # Every file is filled in before any is written, so a template fault leaves no half-made app.
+    files: dict[Path, str] = {}
     for source in sorted(template.rglob("*")):
         if source.is_dir():
             continue
@@ -95,9 +97,11 @@ def create(root: Path, name: str, title: str | None = None, template: Path = TEM
             text = text.replace(placeholder, value)
         if "{{" in text:
             raise CreateError(f"template {source.relative_to(template)} has a placeholder create_app doesn't fill")
-        target = app / relative
+        files[app / relative] = text
+    for target, text in files.items():
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(text, encoding="utf-8")
+        # LF on every platform: the app is committed, and Windows would otherwise write CRLF.
+        target.write_text(text, encoding="utf-8", newline="\n")
     return app
 
 

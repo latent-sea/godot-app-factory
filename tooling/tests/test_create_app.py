@@ -14,12 +14,10 @@ import create_app  # noqa: E402
 
 class CreateAppTest(unittest.TestCase):
     def setUp(self) -> None:
-        self._tmp = tempfile.TemporaryDirectory()
-        self.root = Path(self._tmp.name)
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
         (self.root / "apps").mkdir()
-
-    def tearDown(self) -> None:
-        self._tmp.cleanup()
 
     def test_makes_every_file_with_everything_filled_in(self) -> None:
         app = create_app.create(self.root, "shopping_list")
@@ -65,6 +63,24 @@ class CreateAppTest(unittest.TestCase):
         (self.root / "apps/old/factory.json").write_text(json.dumps({"package": "com.latentsea.tally"}))
         with self.assertRaisesRegex(create_app.CreateError, "already apps/old's"):
             create_app.create(self.root, "tally")
+
+    def test_a_template_fault_leaves_no_half_made_app(self) -> None:
+        template = self.root / "template"
+        for source in create_app.TEMPLATE.rglob("*"):
+            if source.is_file():
+                target = template / source.relative_to(create_app.TEMPLATE)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(source.read_bytes())
+        (template / "zz_last.gd").write_text("{{nobody_fills_this}}\n")
+        with self.assertRaisesRegex(create_app.CreateError, "placeholder create_app doesn't fill"):
+            create_app.create(self.root, "tally", template=template)
+        self.assertFalse((self.root / "apps/tally").exists(), "nothing is written for a bad template")
+
+    def test_files_end_lines_with_lf_on_every_platform(self) -> None:
+        app = create_app.create(self.root, "tally")
+        for path in app.rglob("*"):
+            if path.is_file():
+                self.assertNotIn(b"\r", path.read_bytes(), path.name)
 
     def test_quotes_in_a_title_are_refused(self) -> None:
         with self.assertRaisesRegex(create_app.CreateError, "quotes"):

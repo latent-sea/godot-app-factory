@@ -133,10 +133,10 @@ test('two first sign-ins at once end up as one player', async () => {
   const w = world()
   // the other request makes its player and link just before ours
   const create = w.deps.createPlayer
-  w.deps.createPlayer = async (email, steamId) => {
-    w.players.set('winner', { email: placeholderEmail(steamId) })
-    w.links.set(steamId, 'winner')
-    return create(email, steamId)
+  w.deps.createPlayer = async (email) => {
+    w.players.set('winner', { email })
+    w.links.set('76561198000000001', 'winner')
+    return create(email)
   }
   const answer = await steamSignIn({ ticket: TICKET }, null, w.deps)
   assert.equal(answer.status, 200)

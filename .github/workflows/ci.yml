@@ -13,7 +13,9 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # A main run publishes APKs to debug-latest; cancelling it halfway would leave
+  # the release with some new APKs and some old ones. Branches can be cancelled.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read

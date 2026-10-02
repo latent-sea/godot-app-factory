@@ -32,8 +32,9 @@ export type Deps = {
   findLink(steamId: string): Promise<string | null>
   // Records the Steam account as the player's; false if it already belongs to someone.
   addLink(steamId: string, playerId: string): Promise<boolean>
-  // A new player with this address, confirmed; their id.
-  createPlayer(email: string, steamId: string): Promise<string>
+  // A new player with this address, confirmed; their id. Which Steam account
+  // is theirs is recorded by addLink alone (platform.steam_accounts).
+  createPlayer(email: string): Promise<string>
   playerEmail(playerId: string): Promise<string | null>
   setEmail(playerId: string, email: string): Promise<void>
   // A session for the player with this address.
@@ -80,7 +81,7 @@ export async function steamSignIn(body: unknown, token: string | null, deps: Dep
   if (!playerId) {
     // Two first sign-ins at once: the platform refuses the second player (the
     // address is taken), or the second link; either way the first one's player wins.
-    const made = await deps.createPlayer(placeholderEmail(steamId), steamId).catch(() => null)
+    const made = await deps.createPlayer(placeholderEmail(steamId)).catch(() => null)
     if (made && (await deps.addLink(steamId, made))) {
       playerId = made
     } else {

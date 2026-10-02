@@ -4,9 +4,10 @@
     python tooling/install.py checklist  just the named apps
 
 For each pinned dependency this fetches exactly that commit once into
-.cache/deps/<name>/<commit>/, then replaces the app's copy of the pinned
-folder (for gd-chime, apps/<app>/addons/gd_chime/) with a fresh copy of it.
-Nothing else from the dependency reaches the app.
+.cache/deps/<name>/<commit>/ (dropping the commits the pin moved off), then
+replaces the app's copy of the pinned folder (for gd-chime,
+apps/<app>/addons/gd_chime/) with a fresh copy of it. Nothing else from the
+dependency reaches the app.
 
 Then each factory service the app names in its factory.json ("services":
 ["look"]) is copied from services/<name>/ to apps/<app>/addons/factory_<name>/.
@@ -75,8 +76,9 @@ def read_pins(root: Path) -> list[Pin]:
                 f"dependencies.json: {name}.commit must be a full 40-character commit hash, got '{entry['commit']}'"
             )
         copy = Path(entry["copy"])
-        if copy.is_absolute() or ".." in copy.parts:
-            raise InstallError(f"dependencies.json: {name}.copy must be a path inside the repo, got '{entry['copy']}'")
+        # '.' has no parts: it would make install_into replace the whole app.
+        if copy.is_absolute() or not copy.parts or ".." in copy.parts:
+            raise InstallError(f"dependencies.json: {name}.copy must be a folder inside the repo, got '{entry['copy']}'")
         pins.append(Pin(name, entry["repo"], entry["commit"], copy.as_posix()))
     return pins
 
@@ -95,11 +97,13 @@ def find_apps(root: Path, names: list[str]) -> list[Path]:
     return [known[n] for n in names]
 
 
-def _git(*args: str, cwd: Path) -> str:
+def _git(*args: str, cwd: Path, timeout: int = 600) -> str:
     try:
-        done = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+        done = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, timeout=timeout)
     except FileNotFoundError:
         raise InstallError("git is not installed or not on the PATH") from None
+    except subprocess.TimeoutExpired:
+        raise InstallError(f"git {' '.join(args)} was still running after {timeout}s; stopped") from None
     if done.returncode != 0:
         raise InstallError(f"git {' '.join(args)} failed:\n{done.stderr.strip()}")
     return done.stdout.strip()
@@ -130,6 +134,11 @@ def fetch(root: Path, pin: Pin) -> Path:
         _git("--work-tree", str(tree), "checkout", "FETCH_HEAD", "--", pin.copy, cwd=repo)
         (tree / COMPLETE).write_text(pin.commit + "\n", encoding="utf-8")
         tree.rename(cached)
+    # Only the pinned commit is wanted: drop the commits the pin moved off and
+    # anything a fetch killed halfway left behind, or the cache grows forever.
+    for stale in cached.parent.iterdir():
+        if stale != cached:
+            shutil.rmtree(stale, ignore_errors=True)
     return cached / pin.copy
 
 

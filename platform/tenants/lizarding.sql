@@ -36,5 +36,6 @@ grant execute on function platform.create_queue(text), platform.drop_queue(text)
 grant execute on all functions in schema pgmq to lizarding;
 
 -- Deleting a player: the platform calls lizarding.forget_player(uuid), which
--- Lizarding writes (sql/delete_player.sql says what it must do).
+-- Lizarding writes as a security definer function it owns
+-- (sql/delete_player.sql says what it must do).
 insert into platform.tenants values ('lizarding') on conflict do nothing;
