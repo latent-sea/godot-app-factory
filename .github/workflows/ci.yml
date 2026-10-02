@@ -1,7 +1,9 @@
-# Checks every app, then builds each one's debug APK.
+# Checks every app, then builds each one's debug APK, and exports every site
+# for the web - published to GitHub Pages from main.
 #
 # The same tools run locally: tooling/install.py, tooling/check_app.py,
-# tooling/export_android.py. Godot's version comes from dependencies.json.
+# tooling/export_android.py, tooling/export_web.py. Godot's version comes
+# from dependencies.json.
 
 name: CI
 
@@ -63,6 +65,13 @@ jobs:
           python3 tooling/create_app.py ci_scratch
           python3 tooling/install.py ci_scratch
           python3 tooling/check_app.py ci_scratch --godot ~/godot/godot
+
+      # A new site must pass its checks as create_site makes it, with no hand edits.
+      - name: Check a freshly created site
+        run: |
+          python3 tooling/create_site.py ci_site
+          python3 tooling/install.py ci_site
+          python3 tooling/check_app.py ci_site --godot ~/godot/godot
 
       # No app installs the backend yet: check it, tests and all, in a fresh one.
       - name: Check the backend service in a fresh app
@@ -176,3 +185,80 @@ jobs:
           fi
           gh release upload "$tag" build/*.apk --clobber
           gh release edit "$tag" --notes "$notes"
+
+  # Every site (an app with a Web export preset), exported as the pages a
+  # browser opens: build/web/<site>/, and build/web/index.html naming them.
+  web:
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Cache Godot and Web templates
+        id: godot-cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ needs.check.outputs.godot }}-linux-web
+
+      - name: Download Godot and Web templates
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        env:
+          VERSION: ${{ needs.check.outputs.godot }}
+        run: |
+          mkdir -p ~/godot
+          base="https://github.com/godotengine/godot/releases/download/${VERSION}"
+          curl -fsSL -o /tmp/godot.zip "${base}/Godot_v${VERSION}_linux.x86_64.zip"
+          unzip -q /tmp/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${VERSION}_linux.x86_64 ~/godot/godot
+          # Only the Web templates: the full set is several times larger.
+          templates=~/.local/share/godot/export_templates/${VERSION/-/.}
+          mkdir -p "$templates"
+          curl -fsSL -o /tmp/templates.tpz "${base}/Godot_v${VERSION}_export_templates.tpz"
+          unzip -jq /tmp/templates.tpz 'templates/web_*' 'templates/version.txt' -d "$templates"
+          rm /tmp/templates.tpz
+
+      - name: Install dependencies
+        run: python3 tooling/install.py
+
+      - name: Export sites
+        run: python3 tooling/export_web.py --godot ~/godot/godot
+
+      - name: Upload sites
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-sites
+          path: build/web
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload sites for GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/web
+
+  # The sites, live: https://<owner>.github.io/<repo>/<site>/ from main.
+  # Pages is turned on by the first run (configure-pages); it needs the
+  # repository to be public, or the plan to allow Pages on a private one.
+  pages:
+    needs: web
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

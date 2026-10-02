@@ -1,0 +1,4 @@
+{
+  "name": "Hello",
+  "services": ["look", "basics", "settings", "shell", "testkit"]
+}

@@ -1,0 +1,4 @@
+{
+  "name": "{{title}}",
+  "services": ["look", "basics", "settings", "shell", "testkit"]
+}

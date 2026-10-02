@@ -1,10 +1,12 @@
 """Export apps as debug APKs, signed with tooling/android/debug.keystore.
 
-    python tooling/export_android.py            every app under apps/
+    python tooling/export_android.py            every app with an Android export preset
     python tooling/export_android.py checklist  just the named apps
     options: --godot <path>
 
-Writes build/<app>-debug.apk. Run tooling/install.py first. An APK that
+Writes build/<app>-debug.apk. Run tooling/install.py first. An app without
+an Android preset in its export_presets.cfg (a site, made by create_site.py,
+has a Web one) is left out, and named, it is an error. An APK that
 carries anything only a test needs - a probe, the testkit, tests - is an
 error: the export preset's exclude_filter should keep them out, and this
 checks it did (development_files).
@@ -89,7 +91,7 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
     try:
         godot_bin = godot.find(args.godot)
-        for app in find_apps(ROOT, args.apps):
+        for app in godot.exporting(find_apps(ROOT, args.apps), "Android", bool(args.apps), "export"):
             if os.environ.get("ANDROID_HOME"):
                 point_editor_at_sdk(godot_bin, Path(os.environ["ANDROID_HOME"]), app)
             apk = export(godot_bin, app)
