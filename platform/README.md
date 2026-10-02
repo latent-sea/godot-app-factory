@@ -22,6 +22,7 @@ Neither side edits the other's part.
 | `supabase/Caddyfile` | The one open door, on 443: `api.<domain>` and `play.<domain>`, answering only Cloudflare |
 | `sql/queues.sql` | Tenants create and drop their own queues (Supabase Queues) through the platform |
 | `sql/delete_player.sql` | Deleting a player everywhere: each tenant's `forget_player`, then the sign-in |
+| `sql/steam.sql`, `functions/steam-signin/` | Steam sign-in: a Steam account is one player, made the first time or linked to the signed-in one. Its logic is `steam.ts`, tested by `node --test platform/functions/steam-signin/steam.test.ts` |
 | `tenants/add-tenant.sh` | A tenant's login, folder, service slot and its ceiling, database role, and handover files |
 | `tenants/lizarding.sql` | Lizarding's role and schema |
 | `tenants/lizarding.service.example` | An example of Lizarding's service, for Lizarding to adapt |
@@ -57,6 +58,10 @@ Setup takes about ten minutes after the server starts. Its log is at
    `/srv/platform/secrets/tls/origin.pem` and its key as `origin.key`, then
    run `docker restart platform-caddy`.
 4. **Lizarding's key:** `/srv/platform/factory/platform/bin/add-ssh-key lizarding "<their public key>"`.
+5. **Steam sign-in, when the game is on Steam:** in `/srv/platform/supabase/.env` set
+   `STEAM_WEB_API_KEY` (a publisher Web API key, from Steamworks), `STEAM_APP_ID`
+   and, if the game uses another, `STEAM_IDENTITY` (default `latensea`); then
+   `docker compose up -d functions`. Until then steam-signin answers that it isn't set up.
 
 ## Running it
 
