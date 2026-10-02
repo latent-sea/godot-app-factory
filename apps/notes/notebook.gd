@@ -98,6 +98,7 @@ func told(action: StringName, payload: Dictionary) -> GdChime.Phrase:
 		DELETES_OPEN:
 			list.remove_at(index_of(editing.read()))
 			notes.set_value(list)
+			_forget_lost_tag()
 			editing.set_value(null)
 			# out of the editor once the question asked first has come down
 			if _door != null:
@@ -112,7 +113,14 @@ func told(action: StringName, payload: Dictionary) -> GdChime.Phrase:
 			tag.set_value("" if chosen == tag.read() else chosen)
 			return null
 	notes.set_value(list)
+	_forget_lost_tag()
 	return null
+
+
+## The tag chosen is let go once no note carries it, so the list can't stay filtered to nothing.
+func _forget_lost_tag() -> void:
+	if str(tag.read()) != "" and not T.all_tags(notes.read()).has(tag.read()):
+		tag.set_value("")
 
 
 ## When the editor closes: the note it held is dropped if it has no title and no text.
@@ -122,6 +130,7 @@ func drop_if_empty() -> void:
 		var list: Array = notes.read()
 		list.remove_at(at)
 		notes.set_value(list)
+		_forget_lost_tag()
 	editing.set_value(null)
 
 

@@ -31,6 +31,7 @@ var copied := value(false)
 var last_copied := ""
 var _cast: Object  # cast.gd
 var _prompts: Object  # prompts.gd
+var _started_for := -1  # the cast start() last readied for
 
 
 func _init(chimes: GdChime.Chimes, cast: Object, prompts: Object) -> void:
@@ -82,7 +83,12 @@ func told(action: StringName, payload: Dictionary) -> GdChime.Phrase:
 
 
 ## Ready for a new cast's result: no prompt chosen yet, {question} holding the question asked.
-func start(question: String) -> void:
+## `cast_number` tells casts apart: the same one again (coming back from the
+## prompts) keeps what was chosen, filled in and copied.
+func start(question: String, cast_number: int = -1) -> void:
+	if cast_number >= 0 and cast_number == _started_for:
+		return
+	_started_for = cast_number
 	picked.set_value(NO_PROMPT)
 	filled.set_value({P.QUESTION: question})
 	copied.set_value(false)

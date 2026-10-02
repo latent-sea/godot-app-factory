@@ -146,7 +146,7 @@ func _result_screen(drawer: GdChime.Desc) -> GdChime.Desc:
 		copy_card,
 		FactoryLook.button(ui, Cast.CASTS_AGAIN),
 	])
-	var fresh := func(_token: Variant) -> void: copying.start(cast.question.read())
+	var fresh := func(_token: Variant) -> void: copying.start(cast.question.read(), cast.finished)
 	return ui.screen(RESULT, [FactoryLook.page(ui, [content])], cast, {"on_fill": fresh})
 
 
