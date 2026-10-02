@@ -10,6 +10,18 @@ what step 8 automated. A new app is now:
 and it builds its APK in CI with no hand edits (CI checks a freshly
 created app on every run).
 
+A new site - a web app on gd-chime for the web (D-012) - is:
+
+    python tooling/create_site.py <name> [--title "Its Title"]
+    python tooling/install_site.py <name>
+    python tooling/check_site.py <name>
+
+and CI checks it, and from `main` publishes it to GitHub Pages at
+`https://latent-sea.github.io/godot-app-factory/<name>/`. To look at it
+here: `python tooling/export_web.py <name>`, then
+`python3 -m http.server --directory build/web 8000` and open
+`http://localhost:8000/<name>/`.
+
 ## Repeats for every app
 
 | Step | For the Checklist | Now |
