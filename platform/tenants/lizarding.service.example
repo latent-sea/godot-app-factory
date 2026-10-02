@@ -1,0 +1,24 @@
+# An example of Lizarding's long-lived service, as a systemd user service.
+# Lizarding owns the real one: copy this to lizarding.service beside it, edit
+# it, then
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now lizarding
+#   journalctl --user -u lizarding -f        # its logs
+#   systemctl --user restart lizarding       # after a deploy
+# It keeps running when nobody is logged in, is restarted if it stops, and
+# runs under the ceiling the factory set for all of Lizarding's processes
+# (2 cores, 2.5 GB); asking for more here has no effect.
+
+[Unit]
+Description=Lizarding game server
+
+[Service]
+WorkingDirectory=%h/server
+EnvironmentFile=%h/.platform/platform.env
+EnvironmentFile=%h/.platform/db.env
+ExecStart=%h/server/venv/bin/python -m lizarding_server
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

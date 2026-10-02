@@ -1,0 +1,7 @@
+[Unit]
+Description=Dump the platform's whole database to /srv/backups
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/platform-backup-db

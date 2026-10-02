@@ -1,0 +1,39 @@
+# The machine's only open door, on 443. Cloudflare sits in front: its origin
+# certificate is served, and every connection must present Cloudflare's own
+# client certificate (Authenticated Origin Pulls), so nothing reaches the
+# platform or the game server except through Cloudflare.
+
+{
+	admin off
+	# certificates come from Cloudflare's origin CA, not from Caddy
+	auto_https off
+}
+
+(cloudflare_only) {
+	tls /tls/origin.pem /tls/origin.key {
+		client_auth {
+			mode require_and_verify
+			trust_pool file /tls/cloudflare-origin-pull-ca.pem
+		}
+	}
+}
+
+# The platform: sign-in, data, live updates, files and functions.
+api.{$DOMAIN}:443 {
+	import cloudflare_only
+	@api path /auth/v1/* /rest/v1/* /realtime/v1/* /storage/v1/* /functions/v1/* /graphql/v1
+	handle @api {
+		reverse_proxy 127.0.0.1:8000
+	}
+	handle {
+		respond 404
+	}
+	header -server
+}
+
+# Lizarding's game server: WebSocket connections, to its service on 127.0.0.1:8100.
+play.{$DOMAIN}:443 {
+	import cloudflare_only
+	reverse_proxy 127.0.0.1:8100
+	header -server
+}

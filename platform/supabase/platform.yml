@@ -1,0 +1,89 @@
+# The factory's changes to Supabase's own self-host compose file (the
+# docker/ folder of supabase/supabase at the tag setup.sh pins). Loaded after
+# it through COMPOSE_FILE in the project's .env.
+#
+# - Nothing listens beyond this machine except Caddy: the gateway, the
+#   database and the pooler are bound to 127.0.0.1.
+# - Caddy answers on 443 for api.<domain> (the platform) and play.<domain>
+#   (Lizarding's game server), and only to Cloudflare (see Caddyfile).
+# - Every container has a memory ceiling: together at most 4.5 GB of the
+#   machine's 8 GB even if every one were full, so the platform can't starve
+#   Lizarding's service, whose own ceiling is 2.5 GB (tenants/add-tenant.sh);
+#   the rest is the system's. At rest the platform uses about 1 GB.
+# - Postgres is sized for an 8 GB machine.
+
+services:
+  api-gw:
+    ports: !override ["127.0.0.1:8000:8000"]
+    mem_limit: 128m
+
+  db:
+    # Lizarding's direct connection, from this machine only.
+    ports: ["127.0.0.1:5432:5432"]
+    mem_limit: 2g
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - log_min_messages=fatal
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - effective_cache_size=3GB
+      - -c
+      - work_mem=8MB
+      - -c
+      - maintenance_work_mem=128MB
+      # the platform's own services hold about 20 at rest, more under load; each tenant has its own ceiling (Lizarding 20)
+      - -c
+      - max_connections=120
+
+  supavisor:
+    ports: !override ["127.0.0.1:6543:6543"]
+    mem_limit: 256m
+
+  realtime:
+    mem_limit: 512m
+
+  auth:
+    mem_limit: 128m
+
+  rest:
+    mem_limit: 128m
+
+  storage:
+    mem_limit: 192m
+
+  imgproxy:
+    mem_limit: 128m
+
+  meta:
+    mem_limit: 192m
+
+  functions:
+    mem_limit: 384m
+
+  # The dashboard: reached only through an SSH tunnel to 127.0.0.1:8000.
+  studio:
+    mem_limit: 320m
+
+  caddy:
+    container_name: platform-caddy
+    image: caddy:2.10
+    restart: unless-stopped
+    # on the host's network, to reach the gateway and Lizarding's service on 127.0.0.1
+    network_mode: host
+    depends_on:
+      api-gw:
+        condition: service_healthy
+    environment:
+      DOMAIN: ${PLATFORM_DOMAIN}
+    volumes:
+      - ${PLATFORM_DIR}/factory/platform/supabase/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${PLATFORM_DIR}/secrets/tls:/tls:ro
+      - caddy_data:/data
+    mem_limit: 128m
+
+volumes:
+  caddy_data:

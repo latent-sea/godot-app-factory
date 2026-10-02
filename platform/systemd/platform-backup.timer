@@ -1,0 +1,9 @@
+[Unit]
+Description=Dump the platform's database nightly
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Lets a tenant's key log in as the tenant, as root:
+#   add-ssh-key lizarding "ssh-ed25519 AAAA... someone@lizarding"
+set -euo pipefail
+name=${1:?tenant name}
+key=${2:?public key, in quotes}
+case "$key" in ssh-ed25519\ *|ecdsa-sha2-*|ssh-rsa\ *) ;; *) echo "that doesn't look like a public key" >&2; exit 1 ;; esac
+file="/srv/$name/.ssh/authorized_keys"
+grep -qxF "$key" "$file" || echo "$key" >> "$file"
+echo "added; $name now has $(grep -c . "$file") key(s)"
