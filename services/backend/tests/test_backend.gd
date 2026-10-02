@@ -101,6 +101,19 @@ func _signing_in() -> void:
 	var odd: Backend.Reply = await backend.verify_code("someone@example.test", "111111")
 	_claim(not odd.ok, "an answer with no session isn't taken as a sign-in")
 
+	platform.answer(200, {"access_token": "t4", "refresh_token": "r4", "expires_in": 3600, "user": {"id": "steam-player"}, "steam_id": "7656"})
+	await backend.sign_in_with_steam("14000000aabb")
+	_claim(platform.asked[-1][1] == URL + "/functions/v1/steam-signin" and JSON.parse_string(platform.asked[-1][3])["ticket"] == "14000000aabb", "a Steam ticket goes to the platform's steam-signin function")
+	_claim(platform.last_header("Authorization") == "", "as nobody, so it signs in rather than links")
+	_claim(backend.player_id() == "steam-player", "and its session signs the Steam player in")
+	platform.answer(200, {"linked": true})
+	var linked: Backend.Reply = await backend.link_steam("14000000ccdd")
+	_claim(linked.ok and platform.last_header("Authorization") == "Bearer t4", "linking Steam goes as the signed-in player")
+	_claim(backend.player_id() == "steam-player", "and keeps them signed in")
+	platform.answer(401, {"msg": "Steam refused the ticket: Invalid ticket"})
+	var refused_steam: Backend.Reply = await backend.sign_in_with_steam("deadbeef")
+	_claim(not refused_steam.ok and refused_steam.error.begins_with("Steam refused"), "a ticket Steam refuses says so")
+
 	var gone := [false]
 	backend.signed_out.connect(func() -> void: gone[0] = true)
 	platform.answer(204)

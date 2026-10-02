@@ -6,7 +6,8 @@
 #   Docker from Docker's own repository.
 # - Supabase, self-hosted from its own docker/ folder at a pinned release, with
 #   the factory's changes (supabase/platform.yml) and its own fresh secrets.
-# - The platform's SQL: tenants' queues and deleting a player everywhere.
+# - The platform's SQL and functions: tenants' queues, deleting a player
+#   everywhere, and Steam sign-in.
 # - Lizarding, the first tenant (tenants/add-tenant.sh).
 # - A nightly dump of the whole database.
 #
@@ -100,6 +101,12 @@ say "the platform's SQL"
 admin_sql() { docker compose exec -T db psql -qX -v ON_ERROR_STOP=1 -U supabase_admin -d postgres "$@"; }
 admin_sql < "$FACTORY/sql/queues.sql"
 admin_sql < "$FACTORY/sql/delete_player.sql"
+admin_sql < "$FACTORY/sql/steam.sql"
+
+say "the platform's functions"
+# each beside Supabase's own main and hello, where the functions container finds them
+cp -r "$FACTORY/functions/." "$PLATFORM_DIR/supabase/volumes/functions/"
+docker compose restart functions
 
 # --- tenants ----------------------------------------------------------------
 

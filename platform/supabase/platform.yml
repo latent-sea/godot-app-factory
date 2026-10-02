@@ -63,6 +63,11 @@ services:
 
   functions:
     mem_limit: 384m
+    environment:
+      # Steam sign-in (functions/steam-signin): set these three in .env once Steam is set up
+      STEAM_WEB_API_KEY: ${STEAM_WEB_API_KEY:-}
+      STEAM_APP_ID: ${STEAM_APP_ID:-}
+      STEAM_IDENTITY: ${STEAM_IDENTITY:-latensea}
 
   # The dashboard: reached only through an SSH tunnel to 127.0.0.1:8000.
   studio:

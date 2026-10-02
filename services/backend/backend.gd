@@ -26,8 +26,7 @@ extends Node
 ## unless told otherwise), so the player stays signed in between runs, and is
 ## refreshed before it runs out, both for calls and for live channels.
 ##
-## Deliberately absent: Steam sign-in (the platform's steam-signin function,
-## called with call_function), file storage, and presence.
+## Deliberately absent: file storage, and presence.
 
 const SESSION_FILE := "user://backend_session.json"
 ## A session is refreshed when it has less than this long left, in seconds.
@@ -145,7 +144,26 @@ func sign_in_with_google_token(id_token: String, nonce: String) -> Reply:
 	return await _start_session(await _auth("POST", "/token?grant_type=id_token", {"provider": "google", "id_token": id_token, "nonce": nonce}))
 
 
-## A session made elsewhere - by a platform function, such as Steam sign-in - becomes this one.
+## A Steam web API ticket (Steamworks' GetAuthTicketForWebApi, with the
+## platform's Steam identity, "latensea") signs in that Steam account's
+## player, made the first time. The platform's steam-signin function checks
+## the ticket with Steam.
+func sign_in_with_steam(ticket: String) -> Reply:
+	var made := await _call("POST", url + "/functions/v1/steam-signin", {"ticket": ticket}, [], false)
+	if not made.ok:
+		return made
+	return await _start_session(made)
+
+
+## The signed-in player's Steam account, from a ticket as above: afterwards
+## Steam alone signs in as this player, on any device.
+func link_steam(ticket: String) -> Reply:
+	if not is_signed_in():
+		return Reply.new(401, null, "Sign in first, then link Steam")
+	return await call_function("steam-signin", {"ticket": ticket})
+
+
+## A session made elsewhere - by a platform function - becomes this one.
 func use_session(made: Dictionary) -> Reply:
 	return await _start_session(Reply.new(200, made))
 
