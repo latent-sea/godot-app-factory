@@ -63,8 +63,7 @@ def packages_in_use(root: Path) -> dict[str, str]:
     return used
 
 
-def create(root: Path, name: str, title: str | None = None, templates: tuple[Path, ...] = (TEMPLATE,)) -> Path:
-    """Make apps/<name>/ from the templates, each filled in; a later template's file replaces an earlier one's at the same path."""
+def create(root: Path, name: str, title: str | None = None, template: Path = TEMPLATE) -> Path:
     check_name(name)
     title = (title or title_of(name)).strip()
     if not title or '"' in title or "\\" in title:
@@ -84,12 +83,10 @@ def create(root: Path, name: str, title: str | None = None, templates: tuple[Pat
         # A scene node's name: the title without spaces.
         "{{node}}": title.replace(" ", ""),
     }
-    sources: dict[Path, Path] = {}
-    for template in templates:
-        for source in sorted(template.rglob("*")):
-            if source.is_file():
-                sources[source.relative_to(template)] = source
-    for relative, source in sources.items():
+    for source in sorted(template.rglob("*")):
+        if source.is_dir():
+            continue
+        relative = source.relative_to(template)
         # The app's script is named after the app.
         if relative.as_posix() == "app.gd":
             relative = Path(f"{name}.gd")
@@ -97,7 +94,7 @@ def create(root: Path, name: str, title: str | None = None, templates: tuple[Pat
         for placeholder, value in fills.items():
             text = text.replace(placeholder, value)
         if "{{" in text:
-            raise CreateError(f"template {source.relative_to(ROOT)} has a placeholder create_app doesn't fill")
+            raise CreateError(f"template {source.relative_to(template)} has a placeholder create_app doesn't fill")
         target = app / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text, encoding="utf-8")

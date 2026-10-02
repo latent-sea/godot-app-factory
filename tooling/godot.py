@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import os
 import platform
-import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -20,36 +19,6 @@ ROOT = Path(__file__).resolve().parent.parent
 
 class ToolError(Exception):
     """Something the person running the tool has to fix; the message says what."""
-
-
-PLATFORM = re.compile(r'^platform="([^"]*)"', re.MULTILINE)
-
-
-def export_platforms(app: Path) -> list[str]:
-    """The platforms an app's export_presets.cfg has a preset for ('Android', 'Web'); none without the file."""
-    presets = app / "export_presets.cfg"
-    if not presets.exists():
-        return []
-    return PLATFORM.findall(presets.read_text(encoding="utf-8"))
-
-
-def exporting(apps: list[Path], platform_name: str, named: bool, tool: str) -> list[Path]:
-    """The apps among these with a preset for the platform.
-
-    An app named on the command line without one is an error; among every
-    app, one without is skipped and said so, since an app is exported for
-    the platforms its presets name - a site has a Web preset, a phone app
-    an Android one.
-    """
-    chosen = []
-    for app in apps:
-        if platform_name in export_platforms(app):
-            chosen.append(app)
-        elif named:
-            raise ToolError(f"{app.name} has no {platform_name} preset in its export_presets.cfg")
-        else:
-            print(f"{tool}: {app.name}: no {platform_name} preset, not exported")
-    return chosen
 
 
 def pinned_version(root: Path = ROOT) -> str:

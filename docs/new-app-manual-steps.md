@@ -10,18 +10,6 @@ what step 8 automated. A new app is now:
 and it builds its APK in CI with no hand edits (CI checks a freshly
 created app on every run).
 
-A new site - the same, for the web (D-012) - is:
-
-    python tooling/create_site.py <name> [--title "Its Title"]
-    python tooling/install.py <name>
-    python tooling/check_app.py <name>
-    python tooling/export_web.py <name>
-
-and CI exports it and, from `main`, publishes it to GitHub Pages at
-`https://latent-sea.github.io/godot-app-factory/<name>/`. To look at it
-here, `python3 -m http.server --directory build/web 8000` and open
-`http://localhost:8000/<name>/`.
-
 ## Repeats for every app
 
 | Step | For the Checklist | Now |
@@ -97,7 +85,3 @@ here, `python3 -m http.server --directory build/web 8000` and open
   never reads it itself (D-009).
 - An app loads its probe only when walked (`load("res://probe.gd")` in
   `probe()`), so an export can leave the probe and the testkit out.
-- A browser draws with WebGL, which only the compatibility renderer
-  speaks: a site's `project.godot` sets `rendering_method.web`. The export
-  is single-threaded so a plain static host serves it; a site's `index.pck`
-  is read by `export_web.py` to be sure no test went out with it.

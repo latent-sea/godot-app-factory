@@ -10,8 +10,6 @@ Godot is the application runtime.
 
 Android is the first major deployment target, but the architecture should preserve the cross-platform advantages of Godot wherever practical.
 
-The web is the second: a *site* is an app exported for a browser (`tooling/create_site.py`, `tooling/export_web.py`), published to GitHub Pages from `main` (D-012).
-
 ---
 
 ## Existing UI foundation: gd-chime
@@ -381,7 +379,6 @@ Unless investigation identifies a strong reason otherwise:
 - GitHub hosts source control.
 - GitHub Actions provides CI/CD where useful.
 - Android is the initial mobile deployment target.
-- The web is the second target: a site is an app with a Web export preset, served as static files from GitHub Pages.
 
 Native Android code should be introduced when Godot alone cannot reasonably provide required platform functionality.
 
