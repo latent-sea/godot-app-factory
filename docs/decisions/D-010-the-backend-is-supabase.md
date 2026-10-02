@@ -1,5 +1,8 @@
 # D-010: The backend is Supabase, self-hosted in the end
 
+*Its hosting plan (dates, a separate campaign machine) is replaced by
+[D-011](D-011-one-machine-lizarding-a-tenant.md).*
+
 **Problem.** The factory has no backend. Apps can only save to the phone.
 The apps now planned need more, and what they need depends on the app:
 - **Sign-in.** One Latensea player across every app. They can sign in with
