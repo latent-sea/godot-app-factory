@@ -17,3 +17,4 @@ Ordinary implementation details don't get one.
 | [D-009](D-009-the-factory-assembles-services-declare-needs.md) | The factory assembles an app; each service declares what it needs, the look is appearance only, a shell service runs the app |
 | [D-010](D-010-the-backend-is-supabase.md) | The backend is Supabase, on the hosted free plan now and self-hosted later; apps use plain GDScript |
 | [D-011](D-011-one-machine-lizarding-a-tenant.md) | One Hetzner machine carries the platform; the factory owns it and Lizarding is a tenant |
+| [D-012](D-012-sites-on-gd-chime-for-the-web.md) | Sites are web apps on gd-chime for the web, a JavaScript port; published to GitHub Pages |

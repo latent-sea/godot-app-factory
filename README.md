@@ -10,6 +10,8 @@ Godot is the application runtime.
 
 Android is the first major deployment target, but the architecture should preserve the cross-platform advantages of Godot wherever practical.
 
+The web is the second: a *site* is a web app on gd-chime for the web, a JavaScript port of gd-chime (`web/gd_chime/`), made by `tooling/create_site.py` and published to GitHub Pages from `main` (D-012).
+
 ---
 
 ## Existing UI foundation: gd-chime

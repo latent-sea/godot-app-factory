@@ -1,7 +1,9 @@
-# Checks every app, then builds each one's debug APK.
+# Checks every app, then builds each one's debug APK; checks every site on
+# gd-chime for the web, and publishes the sites to GitHub Pages from main.
 #
 # The same tools run locally: tooling/install.py, tooling/check_app.py,
-# tooling/export_android.py. Godot's version comes from dependencies.json.
+# tooling/export_android.py; tooling/install_site.py, tooling/check_site.py,
+# tooling/export_web.py. Godot's version comes from dependencies.json.
 
 name: CI
 
@@ -176,3 +178,67 @@ jobs:
           fi
           gh release upload "$tag" build/*.apk --clobber
           gh release edit "$tag" --notes "$notes"
+
+  # Sites: web apps on gd-chime for the web (web/gd_chime/), each walked by
+  # its probe in a headless Chrome - which, with Node, the runner image has.
+  sites:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install gd-chime for the web into every site
+        run: python3 tooling/install_site.py
+
+      - name: Check the framework and every site
+        run: python3 tooling/check_site.py
+
+      # A new site must pass its checks as create_site makes it, with no hand edits.
+      - name: Check a freshly created site
+        run: |
+          python3 tooling/create_site.py ci_site
+          python3 tooling/install_site.py ci_site
+          python3 tooling/check_site.py ci_site
+          rm -r sites/ci_site
+
+      - name: Export sites
+        run: python3 tooling/export_web.py
+
+      - name: Upload sites
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-sites
+          path: build/web
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload sites for GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/web
+
+  # The sites, live from main: https://<owner>.github.io/<repo>/<site>/.
+  # The first run turns Pages on for the repository (enablement).
+  pages:
+    needs: sites
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
