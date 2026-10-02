@@ -98,7 +98,7 @@ until docker compose exec -T db pg_isready -U postgres -h localhost >/dev/null 2
 until curl -fs -o /dev/null http://127.0.0.1:8000/auth/v1/health -H "apikey: $(grep '^SUPABASE_PUBLISHABLE_KEY=' .env | cut -d= -f2-)"; do sleep 2; done
 
 say "the platform's SQL"
-admin_sql() { docker compose exec -T db psql -qX -v ON_ERROR_STOP=1 -U supabase_admin -d postgres "$@"; }
+admin_sql() { docker compose exec -T db psql -qX -v ON_ERROR_STOP=1 -U supabase_admin -d postgres; }
 admin_sql < "$FACTORY/sql/queues.sql"
 admin_sql < "$FACTORY/sql/delete_player.sql"
 admin_sql < "$FACTORY/sql/steam.sql"

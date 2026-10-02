@@ -72,6 +72,46 @@ jobs:
           python3 tooling/install.py ci_backend
           python3 tooling/check_app.py ci_backend --godot ~/godot/godot
 
+  # The shared server's set-up (platform/): it only runs on the real
+  # machine, so its parts are checked here before anyone orders one.
+  platform:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Shell scripts
+        run: shellcheck -x platform/setup.sh platform/tenants/*.sh platform/bin/*
+
+      - name: First-boot file
+        run: python3 -c "import yaml; d = yaml.safe_load(open('platform/cloud-init.yaml')); assert d['runcmd'] and d['write_files']"
+
+      - name: Steam sign-in
+        run: node --test platform/functions/steam-signin/steam.test.ts
+
+      - name: Supabase's compose file with the factory's changes
+        run: |
+          tag=$(sed -n 's/^SUPABASE_TAG=//p' platform/setup.sh)
+          git clone -q --depth 1 --filter=blob:none --sparse --branch "$tag" https://github.com/supabase/supabase /tmp/supabase
+          git -C /tmp/supabase sparse-checkout set docker
+          cd /tmp/supabase/docker
+          cp .env.example .env
+          sed -i "s|^COMPOSE_FILE=.*|COMPOSE_FILE=docker-compose.yml:$GITHUB_WORKSPACE/platform/supabase/platform.yml|" .env
+          printf 'PLATFORM_DOMAIN=example.test\nPLATFORM_DIR=/tmp/platform\n' >> .env
+          docker compose config --format json | python3 "$GITHUB_WORKSPACE/platform/checks/compose_check.py"
+
+      - name: The one open door (Caddyfile)
+        run: |
+          mkdir -p /tmp/tls
+          openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 1 -subj /CN=ci -keyout /tmp/tls/origin.key -out /tmp/tls/origin.pem
+          cp /tmp/tls/origin.pem /tmp/tls/cloudflare-origin-pull-ca.pem
+          image=$(sed -n 's/^    image: \(caddy:.*\)/\1/p' platform/supabase/platform.yml)
+          docker run --rm -e DOMAIN=example.test -v "$PWD/platform/supabase/Caddyfile:/etc/caddy/Caddyfile:ro" -v /tmp/tls:/tls:ro "$image" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
   android:
     needs: check
     runs-on: ubuntu-24.04
