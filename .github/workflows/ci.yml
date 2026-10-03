@@ -117,8 +117,14 @@ jobs:
           mkdir -p /tmp/tls
           openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 1 -subj /CN=ci -keyout /tmp/tls/origin.key -out /tmp/tls/origin.pem
           cp /tmp/tls/origin.pem /tmp/tls/cloudflare-origin-pull-ca.pem
+          cp /tmp/tls/origin.pem /tmp/tls/play-origin.pem
+          cp /tmp/tls/origin.key /tmp/tls/play-origin.key
           image=$(sed -n 's/^    image: \(caddy:.*\)/\1/p' platform/supabase/platform.yml)
-          docker run --rm -e DOMAIN=example.test -v "$PWD/platform/supabase/Caddyfile:/etc/caddy/Caddyfile:ro" -v /tmp/tls:/tls:ro "$image" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          # play. on the platform's own domain, and on a domain of its own
+          for play in "example.test origin" "example-play.test play-origin"; do
+            set -- $play
+            docker run --rm -e DOMAIN=example.test -e PLAY_DOMAIN="$1" -e PLAY_CERT="$2" -v "$PWD/platform/supabase/Caddyfile:/etc/caddy/Caddyfile:ro" -v /tmp/tls:/tls:ro "$image" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          done
 
   android:
     needs: check

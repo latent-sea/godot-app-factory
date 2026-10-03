@@ -9,7 +9,7 @@
 # - Its database role and schema (tenants/<name>.sql), with a password made
 #   here and handed over in /srv/<name>/.platform/db.env, readable by the
 #   tenant only.
-# - Its port on 127.0.0.1, which Caddy serves as play.<domain> (for Lizarding).
+# - Its port on 127.0.0.1, which Caddy serves as play.<play domain> (for Lizarding).
 # Safe to run again.
 
 set -euo pipefail
@@ -80,6 +80,8 @@ fi
 # What it needs to know about the platform, no secrets.
 publishable=$(grep '^SUPABASE_PUBLISHABLE_KEY=' .env | cut -d= -f2-)
 domain=$(grep '^PLATFORM_DOMAIN=' .env | cut -d= -f2-)
+play_domain=$(grep '^PLAY_DOMAIN=' .env | cut -d= -f2-)
+play_domain=${play_domain:-$domain}
 cat > "$home/.platform/platform.env" <<EOF
 # The platform, as $name sees it. Made by the factory; nothing secret.
 PLATFORM_URL=https://api.$domain
@@ -90,8 +92,9 @@ TOKEN_ISSUER=https://api.$domain/auth/v1
 TOKEN_AUDIENCE=authenticated
 # The key clients send as apikey (public, safe in apps):
 PUBLISHABLE_KEY=$publishable
-# Your service listens here; players reach it as wss://play.$domain
+# Your service listens here; players reach it at PLAY_URL, through Cloudflare
 LISTEN=127.0.0.1:$port
+PLAY_URL=wss://play.$play_domain
 EOF
 chmod 644 "$home/.platform/platform.env"
 echo "== tenant $name ready: login $name, folder $home, port $port"

@@ -4,7 +4,7 @@
 #
 # - Nothing listens beyond this machine except Caddy: the gateway, the
 #   database and the pooler are bound to 127.0.0.1.
-# - Caddy answers on 443 for api.<domain> (the platform) and play.<domain>
+# - Caddy answers on 443 for api.<domain> (the platform) and play.<play domain>
 #   (Lizarding's game server), and only to Cloudflare (see Caddyfile).
 # - Every container has a memory ceiling: together at most 4.5 GB of the
 #   machine's 8 GB even if every one were full, so the platform can't starve
@@ -95,6 +95,8 @@ services:
         condition: service_healthy
     environment:
       DOMAIN: ${PLATFORM_DOMAIN}
+      PLAY_DOMAIN: ${PLAY_DOMAIN:-${PLATFORM_DOMAIN}}
+      PLAY_CERT: ${PLAY_CERT:-origin}
     volumes:
       - ${PLATFORM_DIR}/factory/platform/supabase/Caddyfile:/etc/caddy/Caddyfile:ro
       - ${PLATFORM_DIR}/secrets/tls:/tls:ro

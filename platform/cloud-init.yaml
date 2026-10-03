@@ -1,7 +1,8 @@
 #cloud-config
 # Paste this whole file into "Cloud config" when creating the server on
-# Hetzner. Change one line first: DOMAIN, the domain whose api. and play.
-# names will point at this machine (through Cloudflare).
+# Hetzner. Check two lines first: DOMAIN, whose api. name is the platform,
+# and PLAY_DOMAIN, whose play. name is Lizarding's game server (the same
+# domain will do). Both point at this machine, through Cloudflare.
 #
 # At first boot it fetches the factory's platform folder and runs setup.sh,
 # which takes about ten minutes. Its log: /var/log/platform-setup.log
@@ -10,7 +11,8 @@ write_files:
   - path: /srv/platform/platform.env
     permissions: "0644"
     content: |
-      DOMAIN=example.com
+      DOMAIN=latent-sea.com
+      PLAY_DOMAIN=lizarding.com
 
 package_update: true
 package_upgrade: true

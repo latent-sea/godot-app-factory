@@ -24,6 +24,8 @@ SUPABASE_TAG=self-hosted/v0.8.2
 # shellcheck source=/dev/null
 source "$PLATFORM_DIR/platform.env"
 : "${DOMAIN:?set DOMAIN in /srv/platform/platform.env}"
+# Lizarding's players connect to play.$PLAY_DOMAIN; without one, play.$DOMAIN
+PLAY_DOMAIN=${PLAY_DOMAIN:-$DOMAIN}
 
 say() { echo "== $*"; }
 
@@ -92,6 +94,10 @@ if [ ! -d "$PLATFORM_DIR/supabase" ]; then
   set_env SITE_URL "https://api.$DOMAIN"
   set_env ENABLE_ANONYMOUS_USERS true
   set_env PLATFORM_DOMAIN "$DOMAIN"
+  set_env PLAY_DOMAIN "$PLAY_DOMAIN"
+  # Cloudflare's origin certificates cover one domain each: play. on its own
+  # domain has its own certificate (README, "By hand, after ordering")
+  if [ "$PLAY_DOMAIN" = "$DOMAIN" ]; then set_env PLAY_CERT origin; else set_env PLAY_CERT play-origin; fi
   set_env PLATFORM_DIR "$PLATFORM_DIR"
   # Supabase's file first, the factory's changes after it
   set_env COMPOSE_FILE "docker-compose.yml:$FACTORY/supabase/platform.yml"
