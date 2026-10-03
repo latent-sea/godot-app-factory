@@ -6,6 +6,7 @@
 import { ChimeApp, Controller, Language, Phrase, Pressables, Themes } from "../../gd_chime.js";
 
 const COUNTING = "counting";
+const POSTER = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9"><rect width="16" height="9" fill="#8a5a2b"/><rect x="5" y="2" width="6" height="5" fill="#c8915a"/></svg>');
 const CRATE = "crate";
 export const COUNTS = "counts_a_crate";
 export const NAMES = "names_a_crate";
@@ -90,6 +91,8 @@ export class Stall extends ChimeApp {
     ]);
     const crate = ui.screen(CRATE, [
       ui.text(ui.parameter(CRATE).map((name) => Phrase.with("The crate called %s", [name ?? ""])), Themes.WORDS),
+      ui.image(POSTER, "", Phrase.of("A wooden crate")),
+      ui.embed("embedded.html", { title: Phrase.of("A crate in motion"), poster: POSTER }),
       ui.button(BACKS, { goes_to: Driver.BACK }),
     ]);
     return ui.app("stall", [ui.stack([counting, crate])]);

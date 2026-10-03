@@ -44,6 +44,16 @@ export class StallProbe extends Walk {
     this.claim("a link goes to the crate's screen", this.top() === "crate");
     this.claim("carrying the crate it names", this.shows("The crate called Apples"));
     this.claim("the counting screen is hidden", !this.shows("3 crates counted"));
+    const crateScreen = this.root().querySelector('[data-place="crate"]');
+    this.claim("a picture says what it shows", crateScreen.querySelector("img.chime-image")?.alt === "A wooden crate");
+    const poster = crateScreen.querySelector(".chime-embed-poster");
+    this.claim("an embed with a poster loads nothing until pressed", !!poster && !crateScreen.querySelector("iframe"));
+    this.claim("its poster says what pressing it plays", poster?.getAttribute("aria-label") === "Play A crate in motion");
+    poster?.click();
+    await this.frames(3);
+    const frame = crateScreen.querySelector("iframe.chime-embed-frame");
+    this.claim("pressed, the poster gives way to the page it stood for", !!frame && frame.getAttribute("src") === "embedded.html" && !crateScreen.querySelector(".chime-embed-poster"));
+    this.claim("and the frame is named for a reader who cannot see it", frame?.title === "A crate in motion");
     await this.press(BACKS);
     this.claim("back returns to counting", this.top() === "counting" && this.shows("3 crates counted"));
 

@@ -70,7 +70,20 @@ export class Ui {
     return Phrase.of(this.actions.has(action) ? this.actions.getWords(action) : action);
   }
 
-  image(content, style = "") { return new Desc("image", { content, style }); }
+  /** A picture: its address, or a bound value reading one, and the words a reader who cannot see it hears. */
+  image(content, style = "", alt = "") { return new Desc("image", { content, style, alt }); }
+
+  /**
+   * Another page shown in a frame of this shape - a video above all. Its
+   * options: title, what the frame is, said to a reader who cannot see it;
+   * ratio, its shape ("16 / 9" unless given); poster, a picture shown in its
+   * place until it is pressed, so nothing of the other page loads before the
+   * reader asks; and style. Without a poster the frame loads as it nears the screen.
+   */
+  embed(src, options = {}) {
+    checked("an embed", options, ["title", "ratio", "poster", "style"]);
+    return new Desc("embed", { src, title: options.title ?? "", ratio: options.ratio ?? "16 / 9", poster: options.poster ?? null, style: options.style ?? "" });
+  }
 
   surface(style, content = []) { return new Desc("surface", { style }, content); }
 
@@ -345,8 +358,47 @@ const BUILDERS = {
 
   image(ui, desc, parent) {
     const made = el(parent, "img", `chime-image ${styleOf(desc.props.style)}`);
-    made.alt = "";
-    ui.draws(made, () => { const src = desc.props.content; made.src = Bound.is(src) ? src.read() ?? "" : src; });
+    made.loading = "lazy";
+    made.decoding = "async";
+    ui.draws(made, () => {
+      const { content, alt } = desc.props;
+      made.src = (Bound.is(content) ? content.read() : content) ?? "";
+      made.alt = Language.said(Bound.is(alt) ? alt.read() : alt);
+    });
+    return made;
+  },
+
+  embed(ui, desc, parent) {
+    const { src, title, ratio, poster, style } = desc.props;
+    const made = el(parent, "div", `chime-embed ${styleOf(style)}`);
+    made.style.aspectRatio = ratio;
+    const said = () => Language.said(title);
+    const frame = () => {
+      const shown = el(made, "iframe", "chime-embed-frame");
+      shown.src = src;
+      shown.title = said();
+      shown.loading = "lazy";
+      shown.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen";
+      shown.allowFullscreen = true;
+      shown.referrerPolicy = "strict-origin-when-cross-origin";
+      return shown;
+    };
+    if (!poster) { frame(); return made; }
+    // the poster stands in for the frame until pressed: a press of the reader's own, never a command
+    const press = el(made, "button", "chime-embed-poster");
+    press.type = "button";
+    press.dataset.src = src;
+    const picture = el(press, "img", "chime-embed-picture");
+    picture.src = poster;
+    picture.alt = "";
+    picture.loading = "lazy";
+    el(press, "span", "chime-embed-play");
+    ui.draws(press, () => { press.setAttribute("aria-label", Language.said(Phrase.with("Play %s", [said()]))); });
+    press.addEventListener("click", () => {
+      leave(press);
+      press.remove();
+      frame().focus();
+    });
     return made;
   },
 
