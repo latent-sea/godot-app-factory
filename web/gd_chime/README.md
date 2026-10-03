@@ -62,8 +62,8 @@ The floor, faithfully, from the GDScript and its tests:
 | `look.js`, `themes.js` | `theme*.gd` | one neutral look as CSS custom properties, and the style names |
 | `walk.js` | the factory's `walk.gd` | a probe: presses, reading the screen, claims, `PROBE OK` |
 
-The vocabulary: `text`, `image` (with alt text), `embed` (another page in a frame, a video above all, shown as a poster until pressed), `surface`, `paragraph`, `link`, `divider`,
-`pressable`, `pressLocal`, `reason`, `button`, `field`, `area`, `row`,
+The vocabulary: `text`, `image` (with alt text), `embed` (another page in a frame, a video above all, shown as a poster until pressed), `surface`, `paragraph`, `link`, `divider` (with a style),
+`pressable`, `pressLocal`, `reason`, `button`, `field` (with a visible label and autocomplete), `area`, `row`,
 `column`, `grid`, `stack`, `scroll`, `each`, `eachAcross`, `when`, `local`,
 `bound`, `parameter`, and the places `app`, `screen`, `tabs`, `popUp`. The
 chained marks: `grow`, `basis`, `atMost`, `span`, `wraps`, `hidesEmpty`,

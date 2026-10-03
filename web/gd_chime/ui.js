@@ -37,6 +37,7 @@ import { Pressables, Themes } from "./themes.js";
 import { Value } from "./value.js";
 
 const DRAWN = "drawn";
+let fieldsMade = 0; // every field's own id, so its label names it
 const pieces = new WeakMap(); // element -> [what to do as it goes]
 
 export class Ui {
@@ -97,8 +98,8 @@ export class Ui {
     return this.pressable(action, parameter, [this.text(words, options.words_style ?? Themes.PARAGRAPH)], options.style ?? "Link");
   }
 
-  /** A line between parts. */
-  divider() { return new Desc("divider", {}); }
+  /** A line between parts, in a style of the look's if given. */
+  divider(style = "") { return new Desc("divider", { style }); }
 
   // --- behaviour ---
 
@@ -124,9 +125,15 @@ export class Ui {
     return options.opens ? made.opens(options.opens) : made;
   }
 
-  /** A line typed into: Enter dispatches the action with {line}; options changes (on each keystroke), shows (a bound value it shows), carries (line -> payload), leaves (as the focus leaves), placeholder. */
+  /**
+   * A line typed into: Enter dispatches the action with {line}. Options:
+   * label, the words over it that name it; changes, dispatched on each
+   * keystroke; shows, a bound value it shows; carries, line -> payload;
+   * leaves, dispatched as the focus leaves; placeholder; kind (text, email...);
+   * autocomplete, what the browser may fill it with (name, email...).
+   */
   field(action, style = "", options = {}) {
-    checked("a field", options, ["changes", "shows", "carries", "leaves", "placeholder", "kind"]);
+    checked("a field", options, ["label", "changes", "shows", "carries", "leaves", "placeholder", "kind", "autocomplete"]);
     return new Desc("field", { action, style, ...options });
   }
 
@@ -418,7 +425,7 @@ const BUILDERS = {
     return made;
   },
 
-  divider(_ui, _desc, parent) { return el(parent, "hr", "chime-divider"); },
+  divider(_ui, desc, parent) { return el(parent, "hr", `chime-divider ${styleOf(desc.props.style)}`); },
 
   row(ui, desc, parent) { const made = el(parent, "div", `chime-row ${styleOf(desc.props.style)}`); ui.buildInto(desc.children, made); return made; },
 
@@ -511,13 +518,17 @@ const BUILDERS = {
   },
 
   field(ui, desc, parent) {
-    const { action, style, changes, shows, carries, leaves, placeholder, kind } = desc.props;
+    const { action, style, changes, shows, carries, leaves, placeholder, kind, label, autocomplete } = desc.props;
     const place = ui._place;
     for (const declared of [action, changes, leaves]) if (declared && !place.performs.has(declared)) place.performs.set(declared, "");
     const holder = el(parent, "div", "chime-column chime-field-holder");
+    const named = label ? el(holder, "label", "chime-text chime-field-label") : null;
     const made = el(holder, "input", `chime-field ${styleOf(style || "Field")}`);
     made.type = kind ?? "text";
     made.dataset.action = action;
+    made.id = `chime-field-${++fieldsMade}`;
+    if (autocomplete) made.autocomplete = autocomplete;
+    if (named) { named.htmlFor = made.id; ui.draws(named, () => { named.textContent = Language.said(label); }); }
     if (placeholder) ui.draws(made, () => { made.placeholder = Language.said(placeholder); });
     if (desc.props.takes_focus) Frames.next(() => made.focus());
     const said = el(holder, "p", "chime-text chime-wraps chime-hides-empty Reason");

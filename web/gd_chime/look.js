@@ -127,6 +127,7 @@ export const SHEET = `
 .chime-pressable.Tab { background: none; border: none; border-bottom: 2px solid transparent; border-radius: 0; }
 .chime-pressable.Tab.chime-current { border-bottom-color: var(--chime-accent); }
 .chime-field { font: inherit; color: inherit; background: var(--chime-ground); border: 1px solid var(--chime-edge); border-radius: var(--chime-size-radius); min-height: var(--chime-size-press); padding: calc(var(--chime-size-pad) / 2) var(--chime-size-pad); width: 100%; }
+.chime-field-label { font-size: var(--chime-size-reason); color: var(--chime-ink-soft); }
 .chime-field:focus-visible { outline: 2px solid var(--chime-accent); outline-offset: 1px; }
 .chime-scroll { overflow: auto; min-height: 0; flex: 1 1 auto; }
 .chime-divider { border: 0; border-top: 1px solid var(--chime-edge); margin: 0; }
