@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# The platform's SQL, in order, as the platform's admin. Run by setup.sh at
+# first boot and by platform-deploy whenever platform/sql changes, so every
+# file must be safe to run again, and only ever add or replace: a deploy that
+# goes back to an earlier commit runs the earlier files, which don't undo
+# anything (README, "Deploying changes").
+set -euo pipefail
+PLATFORM_DIR=${PLATFORM_DIR:-/srv/platform}
+FACTORY="$PLATFORM_DIR/factory/platform"
+cd "$PLATFORM_DIR/supabase"
+for file in queues delete_player steam; do
+  docker compose exec -T db psql -qX -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < "$FACTORY/sql/$file.sql"
+done

@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# Keeps the platform at the factory's main branch. Run every five minutes by
+# platform-deploy.timer, as root.
+#
+# - Fetches main. A commit is taken only once every GitHub check on it has
+#   passed; one that failed is never taken, and one still running is looked at
+#   again next time.
+# - Applies only what changed under platform/: the SQL, the functions, the
+#   compose changes, the Caddyfile, and these scripts and timers themselves.
+# - Then checks the platform answers. If it doesn't, it goes back to the
+#   commit it was on, applies that again, and refuses the new commit until a
+#   newer one comes.
+# - The outcome is in $PLATFORM_DIR/status/status.json, which Caddy serves at
+#   https://api.<domain>/platform/status (commits and times only, nothing
+#   secret), and in `journalctl -u platform-deploy`.
+#
+# The machine pulls; GitHub holds no key to it. Supabase's own version
+# (SUPABASE_TAG) is never changed here: that update is a person's (README).
+set -euo pipefail
+PLATFORM_DIR=${PLATFORM_DIR:-/srv/platform}
+CHECKS_URL=${CHECKS_URL:-https://api.github.com/repos/latent-sea/godot-app-factory/commits}
+BIN_DIR=${BIN_DIR:-/usr/local/sbin}
+UNIT_DIR=${UNIT_DIR:-/etc/systemd/system}
+REPO="$PLATFORM_DIR/factory"
+FACTORY="$REPO/platform"
+STATUS="$PLATFORM_DIR/status/status.json"
+REFUSED="$PLATFORM_DIR/deploy-refused"
+
+# one at a time
+exec 9>"${LOCK:-/run/platform-deploy.lock}"
+flock -n 9 || exit 0
+
+say() { echo "deploy: $*"; }
+status() {  # result, commit, detail
+  mkdir -p "$(dirname "$STATUS")"
+  jq -n --arg result "$1" --arg commit "$2" --arg detail "$3" --arg at "$(date -u +%FT%TZ)" \
+    --arg running "$(git -C "$REPO" rev-parse HEAD)" \
+    '{result: $result, commit: $commit, detail: $detail, at: $at, running: $running}' > "$STATUS.part"
+  chmod 644 "$STATUS.part"
+  mv "$STATUS.part" "$STATUS"
+}
+
+cd "$REPO"
+git fetch -q --depth 1 origin main
+new=$(git rev-parse FETCH_HEAD)
+cur=$(git rev-parse HEAD)
+[ "$new" = "$cur" ] && exit 0
+[ "$new" = "$(cat "$REFUSED" 2>/dev/null)" ] && exit 0
+
+# Every check on the commit has passed: none still running, none failed.
+verdict=$(curl -fsS -H "Accept: application/vnd.github+json" "$CHECKS_URL/$new/check-runs?per_page=100" | jq -r '
+  .check_runs as $runs
+  | if ($runs | length) == 0 then "waiting"
+    elif any($runs[]; .status != "completed") then "waiting"
+    elif any($runs[]; (.conclusion | IN("success", "skipped", "neutral")) | not) then "failed"
+    else "passed" end') || { say "couldn't ask GitHub about $new; next time"; exit 0; }
+case "$verdict" in
+  waiting) say "$new: checks still running"; exit 0 ;;
+  failed)
+    say "$new: a check failed, so it isn't deployed"
+    echo "$new" > "$REFUSED"
+    status refused "$new" "a GitHub check failed"
+    exit 0 ;;
+esac
+
+changed=$(git diff --name-only "$cur" "$new" -- platform/)
+touches() { grep -q "^platform/$1" <<<"$changed"; }
+
+# What changed, applied to the commit the repository is now at.
+apply() {
+  if touches bin/ || touches systemd/; then
+    say "scripts and timers"
+    for script in backup-db:platform-backup-db apply-sql:platform-apply-sql deploy:platform-deploy; do
+      # beside, then renamed over: this very script may be the one replaced
+      install -m 0755 "$FACTORY/bin/${script%%:*}" "$BIN_DIR/${script#*:}.new"
+      mv "$BIN_DIR/${script#*:}.new" "$BIN_DIR/${script#*:}"
+    done
+    install -m 0644 "$FACTORY"/systemd/platform-*.service "$FACTORY"/systemd/platform-*.timer "$UNIT_DIR/"
+    systemctl daemon-reload
+  fi
+  cd "$PLATFORM_DIR/supabase"
+  if touches supabase/platform.yml; then
+    say "compose changes"
+    docker compose up -d --remove-orphans
+  fi
+  if touches supabase/Caddyfile; then
+    say "Caddyfile (players connected through it reconnect)"
+    docker restart platform-caddy >/dev/null
+  fi
+  if touches sql/; then
+    say "SQL"
+    PLATFORM_DIR="$PLATFORM_DIR" bash "$FACTORY/bin/apply-sql"
+  fi
+  if touches functions/; then
+    say "functions"
+    cp -r "$FACTORY/functions/." "$PLATFORM_DIR/supabase/volumes/functions/"
+    docker compose restart functions
+  fi
+  cd "$REPO"
+}
+
+# The platform answers: sign-in through the gateway, the functions, and Caddy.
+healthy() {
+  local key tries=60
+  key=$(grep '^SUPABASE_PUBLISHABLE_KEY=' "$PLATFORM_DIR/supabase/.env" | cut -d= -f2-)
+  until curl -fs -o /dev/null http://127.0.0.1:8000/auth/v1/health -H "apikey: $key" \
+    && [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8000/functions/v1/steam-signin -H "apikey: $key")" -lt 500 ] \
+    && [ "$(docker inspect -f '{{.State.Running}}' platform-caddy)" = true ]; do
+    (( --tries )) || return 1
+    sleep 2
+  done
+}
+
+if [ -n "$changed" ]; then say "$cur -> $new: $(tr '\n' ' ' <<<"$changed")"; fi
+git reset -q --hard "$new"
+if [ -z "$changed" ]; then
+  status deployed "$new" "nothing under platform/ changed"
+  exit 0
+fi
+if [ "$(sed -n 's/^SUPABASE_TAG=//p' "$FACTORY/setup.sh")" != "$(cat "$PLATFORM_DIR/supabase/.supabase-version")" ]; then
+  say "SUPABASE_TAG changed: Supabase's own update waits for a person (README)"
+fi
+if (apply) && healthy; then
+  say "$new deployed"
+  status deployed "$new" "applied: $(tr '\n' ' ' <<<"$changed")"
+  exit 0
+fi
+
+say "$new left the platform unwell: back to $cur"
+git reset -q --hard "$cur"
+(apply) || true
+echo "$new" > "$REFUSED"
+if healthy; then
+  status rolled-back "$new" "the platform was unwell after it; back on the previous commit"
+else
+  status unwell "$new" "the platform was unwell after it, and still is on the previous commit"
+fi
+exit 1
