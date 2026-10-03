@@ -38,6 +38,7 @@ export class Driver extends Controller {
     this.places = new Map(); // name -> Place
     this.app = null;
     this._state = { path: [], overlays: [], params: {}, last: {}, history: [], historyParams: [] };
+    this._scrolled = new Map(); // a screen -> how far down the page the reader was as they left it
   }
 
   answers() { return Driver.COMMANDS; }
@@ -204,6 +205,7 @@ export class Driver extends Controller {
     const out = this.transition(this._state, event);
     if (out.refusal) return out.refusal;
     const before = activeOf(this._state);
+    const previousScreen = this._state.path[this._state.path.length - 1] ?? null;
     const raisedBefore = this._state.overlays.length;
     this._state = out.state;
     const after = activeOf(this._state);
@@ -212,11 +214,25 @@ export class Driver extends Controller {
       const place = this.places.get(name);
       if (place && (!before.has(name) || place.parameter !== (this._state.params[name] ?? null))) place.fill(this._state.params[name] ?? null);
     }
+    const leftScreen = previousScreen;
     for (const place of this.places.values()) place.element.hidden = !after.has(place.name) && place.kind !== "app";
     if (this.app) this.app.element.inert = this._state.overlays.length > 0;
+    this._scroll(leftScreen, event.kind === "back");
     this._focus(raisedBefore);
     this.strike(Chimes.GLOBAL, Driver.NAVIGATED);
     return null;
+  }
+
+  /**
+   * A new screen opens at its top, and going back returns the reader to how
+   * far down they were; a pop-up raised or lowered leaves the page where it is.
+   */
+  _scroll(left, back) {
+    const arrived = this._state.path[this._state.path.length - 1] ?? null;
+    const view = this.app?.element.ownerDocument.defaultView;
+    if (!view || !left || arrived === left) return;
+    this._scrolled.set(left, view.scrollY);
+    view.scrollTo(0, back ? this._scrolled.get(arrived) ?? 0 : 0);
   }
 
   /** A pop-up raised takes the focus to its first pressable; lowered, it gives it back to what had it. */

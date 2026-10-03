@@ -76,7 +76,15 @@ export const SHEET = `
 .chime-screen, .chime-tabs { gap: var(--chime-size-gap); }
 .chime-layer { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
 .chime-layer > .chime-shade { pointer-events: auto; }
-.chime-image { max-width: 100%; height: auto; }
+.chime-image { max-width: 100%; height: auto; display: block; }
+.chime-embed { position: relative; width: 100%; max-width: 100%; background: var(--chime-raised); border-radius: var(--chime-size-radius); overflow: hidden; }
+.chime-embed-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.chime-embed-poster { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; cursor: pointer; background: var(--chime-raised); display: grid; place-items: center; }
+.chime-embed-poster:focus-visible { outline: 3px solid var(--chime-accent); outline-offset: -3px; }
+.chime-embed-picture { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.chime-embed-play { position: relative; width: 4.5rem; height: 3.2rem; border-radius: 0.9rem; background: rgb(0 0 0 / 0.72); transition: background 120ms; }
+.chime-embed-play::after { content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-35%, -50%); border-style: solid; border-width: 0.7rem 0 0.7rem 1.15rem; border-color: transparent transparent transparent #fff; }
+.chime-embed-poster:hover .chime-embed-play { background: var(--chime-accent); }
 .chime-stack { position: relative; display: grid; flex: 1 1 auto; min-height: 0; }
 .chime-stack > * { grid-area: 1 / 1; min-width: 0; }
 .chime-place { display: flex; flex-direction: column; min-height: 0; }
