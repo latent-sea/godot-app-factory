@@ -28,7 +28,7 @@ func declare(register: GdChime.Actions) -> void:
 
 func describe() -> GdChime.Desc:
 	# Android's Back goes back a screen, or out from the first. For saved
-	# data: model(GdChime.SettingsFile.new(chimes, Basics.save_file("{{name}}")))
+	# data: var saving := Basics.keep(self, "{{name}}", <the model to keep>)
 	Basics.answer_back(self)
 	# Settings, reached by the gear: hand it every SettingsFile of the app's
 	# data, so Reset app data can wipe them.

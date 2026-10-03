@@ -7,7 +7,7 @@ extends RefCounted
 ##
 ##     func describe() -> GdChime.Desc:
 ##         Basics.answer_back(self)
-##         saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("checklist", saved_at)))
+##         saving = Basics.keep(self, "checklist", list, saved_at)
 ##
 ## An app also needs `config/quit_on_go_back=false` in project.godot, so
 ## Back reaches it instead of closing it; tooling/create_app.py writes that.
@@ -25,6 +25,15 @@ static func save_file(name: String, chosen: String = "", probing: bool = OS.get_
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(probed))
 		return probed
 	return chosen if not chosen.is_empty() else "user://%s.json" % name
+
+
+## A model's facts kept in the app's file for `name` (save_file), under the
+## same name: the app's model that saves and restores them, ready for
+## Settings to reset.
+static func keep(app: Node, name: String, kept: Object, chosen: String = "") -> GdChime.SettingsFile:
+	var saving: GdChime.SettingsFile = app.model(GdChime.SettingsFile.new(app.chimes, save_file(name, chosen)))
+	saving.keep(name, kept)
+	return saving
 
 
 ## Android's Back goes back a screen - closing a pop-up first - or, with

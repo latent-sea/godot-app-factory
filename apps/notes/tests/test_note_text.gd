@@ -1,4 +1,4 @@
-extends SceneTree
+extends "res://addons/factory_testkit/check.gd"
 
 ## note_text.gd: titles, snippets, dates in words, tags, search, what is
 ## copied, and the list's arrangement. Times are fixed to UTC (offset 0) or a
@@ -10,32 +10,30 @@ const T := preload("res://note_text.gd")
 const SEP_27 := 1790517900
 const DAY := 86400
 
-var _failed: Array[String] = []
-
 
 func _init() -> void:
-	_claim(T.stamp(SEP_27, 0) == "Sun 27 Sep, 14:05", "a note's day and time in words: %s" % T.stamp(SEP_27, 0))
-	_claim(T.stamp(SEP_27, 60) == "Sun 27 Sep, 15:05", "shown in the phone's time zone: %s" % T.stamp(SEP_27, 60))
-	_claim(T.month_heading(SEP_27, 0) == "September 2026", "its month as a heading")
-	_claim(T.month_heading(SEP_27 + 4 * DAY, 0) == "October 2026", "four days on is October")
-	_claim(T.month_heading(1790812799, 0) == "September 2026" and T.month_heading(1790812799, 60) == "October 2026", "midnight at the month's end falls by the phone's own clock")
+	expect(T.stamp(SEP_27, 0) == "Sun 27 Sep, 14:05", "a note's day and time in words: %s" % T.stamp(SEP_27, 0))
+	expect(T.stamp(SEP_27, 60) == "Sun 27 Sep, 15:05", "shown in the phone's time zone: %s" % T.stamp(SEP_27, 60))
+	expect(T.month_heading(SEP_27, 0) == "September 2026", "its month as a heading")
+	expect(T.month_heading(SEP_27 + 4 * DAY, 0) == "October 2026", "four days on is October")
+	expect(T.month_heading(1790812799, 0) == "September 2026" and T.month_heading(1790812799, 60) == "October 2026", "midnight at the month's end falls by the phone's own clock")
 
-	_claim(T.title_of({"title": " Moving ", "text": "x"}) == "Moving", "a title is its title, trimmed")
-	_claim(T.title_of({"title": "", "text": "First line\nSecond"}) == "First line", "no title: the first line")
-	_claim(T.title_of({"title": "", "text": ""}) == "Untitled", "nothing at all: Untitled")
-	_claim(T.snippet({"title": "Moving", "text": "Book the van\nPack"}) == "Book the van", "under a title, the text's first line")
-	_claim(T.snippet({"title": "", "text": "Book the van\nPack"}) == "Pack", "with no title, the line after the one shown as the title")
+	expect(T.title_of({"title": " Moving ", "text": "x"}) == "Moving", "a title is its title, trimmed")
+	expect(T.title_of({"title": "", "text": "First line\nSecond"}) == "First line", "no title: the first line")
+	expect(T.title_of({"title": "", "text": ""}) == "Untitled", "nothing at all: Untitled")
+	expect(T.snippet({"title": "Moving", "text": "Book the van\nPack"}) == "Book the van", "under a title, the text's first line")
+	expect(T.snippet({"title": "", "text": "Book the van\nPack"}) == "Pack", "with no title, the line after the one shown as the title")
 
 	var note := {"title": "Trip #Travel", "text": "See #family and #travel, not email@x.com or a#b.\n#to-do", "created": SEP_27, "pinned": false, "id": 1}
-	_claim(T.tags(note) == ["travel", "family", "to-do"], "tags: #words, lower case, each once, in order: %s" % [T.tags(note)])
-	_claim(T.matches(note, "", ""), "an empty search shows everything")
-	_claim(T.matches(note, "FAMILY trip", ""), "every word searched for, ignoring case, anywhere")
-	_claim(not T.matches(note, "family boat", ""), "a word it doesn't hold hides it")
-	_claim(T.matches(note, "", "travel") and not T.matches(note, "", "work"), "a chosen tag shows only its notes")
+	expect(T.tags(note) == ["travel", "family", "to-do"], "tags: #words, lower case, each once, in order: %s" % [T.tags(note)])
+	expect(T.matches(note, "", ""), "an empty search shows everything")
+	expect(T.matches(note, "FAMILY trip", ""), "every word searched for, ignoring case, anywhere")
+	expect(not T.matches(note, "family boat", ""), "a word it doesn't hold hides it")
+	expect(T.matches(note, "", "travel") and not T.matches(note, "", "work"), "a chosen tag shows only its notes")
 
-	_claim(T.copied({"title": "Moving", "text": "Book the van"}) == "Moving\n\nBook the van", "copied: title, blank line, text")
-	_claim(T.copied({"title": "", "text": "Book the van"}) == "Book the van", "no title: just the text")
-	_claim(T.copied({"title": "Moving", "text": ""}) == "Moving", "no text: just the title")
+	expect(T.copied({"title": "Moving", "text": "Book the van"}) == "Moving\n\nBook the van", "copied: title, blank line, text")
+	expect(T.copied({"title": "", "text": "Book the van"}) == "Book the van", "no title: just the text")
+	expect(T.copied({"title": "Moving", "text": ""}) == "Moving", "no text: just the title")
 
 	var notes := [
 		{"id": 1, "title": "Old", "text": "#work", "created": SEP_27 - 40 * DAY, "pinned": false},
@@ -45,20 +43,11 @@ func _init() -> void:
 	]
 	var rows := T.arranged(notes, "", "", 0)
 	var keys: Array = rows.map(func(row: Dictionary) -> String: return row["key"])
-	_claim(keys == ["pinned", "n4", "m2026-09", "n3", "n2", "m2026-08", "n1"], "pinned first, then months newest first: %s" % [keys])
-	_claim(rows[2]["heading"] == "September 2026" and rows[5]["heading"] == "August 2026", "each month has its heading")
+	expect(keys == ["pinned", "n4", "m2026-09", "n3", "n2", "m2026-08", "n1"], "pinned first, then months newest first: %s" % [keys])
+	expect(rows[2]["heading"] == "September 2026" and rows[5]["heading"] == "August 2026", "each month has its heading")
 	var tagged := T.arranged(notes, "", "work", 0).map(func(row: Dictionary) -> String: return row["key"])
-	_claim(tagged == ["pinned", "n4", "m2026-08", "n1"], "a tag keeps only its notes, and their headings: %s" % [tagged])
-	_claim(T.arranged(notes, "nothing like this", "", 0).is_empty(), "no matches, no headings")
-	_claim(T.all_tags(notes) == ["home", "work"], "every tag, once, alphabetical")
+	expect(tagged == ["pinned", "n4", "m2026-08", "n1"], "a tag keeps only its notes, and their headings: %s" % [tagged])
+	expect(T.arranged(notes, "nothing like this", "", 0).is_empty(), "no matches, no headings")
+	expect(T.all_tags(notes) == ["home", "work"], "every tag, once, alphabetical")
 
-	for sentence: String in _failed:
-		print("NOT TRUE: %s" % sentence)
-	if _failed.is_empty():
-		print("PASS test_note_text.gd")
-	quit(0 if _failed.is_empty() else 1)
-
-
-func _claim(held: bool, what: String) -> void:
-	if not held:
-		_failed.append(what)
+	finish()
