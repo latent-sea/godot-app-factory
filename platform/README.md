@@ -89,7 +89,9 @@ same as step 2.
   the machine fetches main and takes a new commit once every GitHub check on it
   has passed, applying only what changed under `platform/` (SQL, functions,
   compose changes, the Caddyfile, these scripts). If the platform doesn't answer
-  afterwards it goes back to the commit it was on and refuses the new one. See
+  afterwards it goes back to the commit it was on, and tries the new one again
+  after six hours or when a newer one comes; a commit whose checks failed is
+  never taken. See
   what happened at `https://api.<domain>/platform/status`, or
   `journalctl -u platform-deploy`. The machine pulls; GitHub holds no key to it.
   - SQL only moves forward: every file is safe to run again and only adds or
