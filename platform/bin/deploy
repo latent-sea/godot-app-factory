@@ -99,13 +99,14 @@ apply() {
   cd "$REPO"
 }
 
-# The platform answers: sign-in through the gateway, the functions, and Caddy.
+# The platform answers: sign-in through the gateway, the functions, and Caddy
+# (once Cloudflare's origin certificate is in place; until then it can't start).
 healthy() {
   local key tries=60
   key=$(grep '^SUPABASE_PUBLISHABLE_KEY=' "$PLATFORM_DIR/supabase/.env" | cut -d= -f2-)
   until curl -fs -o /dev/null http://127.0.0.1:8000/auth/v1/health -H "apikey: $key" \
     && [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8000/functions/v1/steam-signin -H "apikey: $key")" -lt 500 ] \
-    && [ "$(docker inspect -f '{{.State.Running}}' platform-caddy)" = true ]; do
+    && { [ ! -f "$PLATFORM_DIR/secrets/tls/origin.pem" ] || [ "$(docker inspect -f '{{.State.Running}}' platform-caddy)" = true ]; }; do
     (( --tries )) || return 1
     sleep 2
   done

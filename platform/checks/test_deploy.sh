@@ -35,7 +35,7 @@ cat > "$work/bin/docker" <<EOF
 #!/usr/bin/env bash
 echo "docker \$*" >> "$work/log"
 case "\$*" in
-  *inspect*) echo true ;;
+  *inspect*) cat "$work/caddy" ;;
   *exec*) cat > /dev/null ;;
 esac
 EOF
@@ -51,6 +51,7 @@ EOF
 printf '#!/usr/bin/env bash\necho "systemctl $*" >> "%s/log"\n' "$work" > "$work/bin/systemctl"
 printf '#!/usr/bin/env bash\n' > "$work/bin/sleep"
 chmod +x "$work"/bin/*
+echo true > "$work/caddy"
 
 checks() {  # every run's conclusion, or "running"
   local runs=()
@@ -127,5 +128,19 @@ scripts=$(commit "scripts")
 deploy
 claim '[ "$(running)" = "$scripts" ] && grep -q "# touched" "$work/sbin/platform-deploy" && [ -x "$work/sbin/platform-apply-sql" ]' "changed scripts are installed"
 claim '[ -f "$work/units/platform-deploy.timer" ] && logged "systemctl daemon-reload"' "and the timers, with systemd told"
+
+# Caddy down before Cloudflare's certificate is in place: still healthy
+echo false > "$work/caddy"
+echo "-- before the certificate" >> "$origin/platform/sql/steam.sql"
+early=$(commit "before the certificate")
+deploy
+claim '[ "$(running)" = "$early" ] && [ "$(result)" = deployed ]' "before the origin certificate exists, Caddy being down isn't counted against a deploy"
+
+# ... and once it is in place, Caddy down is unwell
+mkdir -p "$srv/secrets/tls" && touch "$srv/secrets/tls/origin.pem"
+echo "-- after the certificate" >> "$origin/platform/sql/steam.sql"
+late=$(commit "after the certificate")
+deploy || true
+claim '[ "$(running)" = "$early" ] && [ "$(cat "$srv/deploy-refused")" = "$late" ]' "with the certificate in place, Caddy down rolls a deploy back"
 
 if [ "$failed" = 0 ]; then echo "PASS test_deploy.sh"; else echo "--- last run:"; cat "$work/out"; exit 1; fi
