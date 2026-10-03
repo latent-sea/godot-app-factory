@@ -8,7 +8,8 @@ service. An app names the ones it uses in its `factory.json`:
 and `tooling/install.py` copies each into the app as
 `addons/factory_<name>/` (gitignored), so a fix here reaches every app on
 its next install. A service's `tests/test_*.gd` run inside every app that
-installs it (`tooling/check_app.py`).
+installs it (`tooling/check_app.py`). An app's own tests extend testkit's `check.gd`; a service's tests
+carry their few lines of it themselves, since a service may reach only what it needs.
 
 | Service | What it is | Needs |
 | --- | --- | --- |
@@ -16,7 +17,7 @@ installs it (`tooling/check_app.py`).
 | [basics](basics/basics.gd) | Android's Back button, and where an app's data is saved (a probe always gets its own file) | nothing |
 | [settings](settings/settings.gd) | The gear and Settings screen every app has: text size, haptics, reset app data, about (D-008) | look, basics |
 | [shell](shell/opening.gd) | How an app runs as a Latensea app: the opening scene and the loading screen (D-009) | look |
-| [testkit](testkit/walk.gd) | What a probe is made of: presses, taps, swipes, reading the screen, claims and the PROBE OK report; never exported | settings |
+| [testkit](testkit/walk.gd) | What a probe is made of: presses, taps, swipes, reading the screen, claims and the PROBE OK report; and what an app's tests are made of ([check.gd](testkit/check.gd)); never exported | settings |
 | [backend](backend/backend.gd) | The shared platform (D-010, D-011): signing in, the player's data, live channels; the session kept and refreshed | nothing |
 
 A service says what it needs in its `service.json` (`{"needs": ["look"]}`).

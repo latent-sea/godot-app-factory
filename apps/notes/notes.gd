@@ -107,8 +107,7 @@ func describe() -> GdChime.Desc:
 	# standing over every screen, and only an app-wide model hears it there.
 	notebook = model(Notebook.new(chimes, commands, EDIT))
 	Basics.answer_back(self)
-	saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("notes", saved_at)))
-	saving.keep("notes", notebook)
+	saving = Basics.keep(self, "notes", notebook, saved_at)
 	settings = Settings.install(self, [saving])
 	menu = model(GdChime.OpenMenu.new(chimes, commands, actions))
 	# The rows' menus need this in place before the first row is described.

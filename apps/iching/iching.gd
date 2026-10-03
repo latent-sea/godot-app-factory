@@ -93,8 +93,7 @@ func describe() -> GdChime.Desc:
 	# The copy drawer takes no model of its own, so copying answers app-wide.
 	copying = model(Copying.new(chimes, cast, prompt_list))
 	Basics.answer_back(self)
-	saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("iching", saved_at)))
-	saving.keep("iching", prompt_list)
+	saving = Basics.keep(self, "iching", prompt_list, saved_at)
 	settings = Settings.install(self, [saving])
 	menu = model(GdChime.OpenMenu.new(chimes, commands, actions))
 	# The prompt rows' menus need this in place before the first row is described.

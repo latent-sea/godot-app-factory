@@ -45,8 +45,7 @@ func declare(register: GdChime.Actions) -> void:
 func describe() -> GdChime.Desc:
 	list = Items.new(chimes)
 	Basics.answer_back(self)
-	saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("checklist", saved_at)))
-	saving.keep("checklist", list)
+	saving = Basics.keep(self, "checklist", list, saved_at)
 	settings = Settings.install(self, [saving])
 	menu = model(GdChime.OpenMenu.new(chimes, commands, actions))
 	# The rows' menus need this in place before the first row is described.

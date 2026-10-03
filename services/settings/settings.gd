@@ -11,7 +11,7 @@ extends GdChime.Controller
 ##         ...
 ##
 ##     func describe() -> GdChime.Desc:
-##         saving = model(GdChime.SettingsFile.new(chimes, Basics.save_file("notes", saved_at)))
+##         saving = Basics.keep(self, "notes", notebook, saved_at)
 ##         settings = Settings.install(self, [saving])
 ##         ...the gear in the first screen's title row: Settings.gear(ui)
 ##         return ui.app(&"notes", [ui.stack([list, editor, settings.screen(ui)])])
