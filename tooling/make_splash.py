@@ -6,14 +6,19 @@ it the moment an app starts, while the engine loads; then the opening scene
 (services/shell/opening.gd) draws the same image the same way and the wave
 under it. Where the wave goes is WAVE_AT in splash.gd, in this image's pixels.
 
-Needs Pillow. Run again after changing the words, the font or the palette:
+Needs Pillow (`pip install pillow`), the one exception to standard-library
+tooling (D-006). Run again after changing the words, the font or the palette:
 
     python tooling/make_splash.py
 """
 
+import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except ImportError:
+    sys.exit("make_splash.py needs Pillow, the one tool that does (D-006): pip install pillow")
 
 ROOT = Path(__file__).resolve().parent.parent
 SHELL = ROOT / "services" / "shell"
