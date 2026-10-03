@@ -78,7 +78,8 @@ const deps: Deps = {
 
 Deno.serve(async (request: Request) => {
   if (request.method !== 'POST') return Response.json({ msg: 'POST a ticket' }, { status: 405 })
-  if (!env('STEAM_WEB_API_KEY') || !env('STEAM_APP_ID')) return Response.json({ msg: 'Steam sign-in is not set up on this platform yet' }, { status: 503 })
+  // 404, not 503: the platform is well, this function just isn't available here yet
+  if (!env('STEAM_WEB_API_KEY') || !env('STEAM_APP_ID')) return Response.json({ msg: 'Steam sign-in is not set up on this platform yet' }, { status: 404 })
   const bearer = request.headers.get('authorization')?.match(/^Bearer\s+(\S+)$/i)?.[1] ?? null
   // a client not signed in sends its publishable key as the bearer, or nothing: neither is a player
   const token = bearer && bearer.split('.').length === 3 && bearer !== env('SUPABASE_ANON_KEY') ? bearer : null
