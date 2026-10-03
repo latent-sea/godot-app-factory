@@ -45,7 +45,7 @@ const PLANS = [
 /**
  * The look by day and by night: one colour family. A clay-madder brand
  * colour and its scale, neutrals tinted from the same warmth, and an ochre
- * kept for the one small sun. Built in OKLCH so every step is even; every
+ * kept for the members mark. Built in OKLCH so every step is even; every
  * text colour clears 4.5:1 on its ground. The rest of the system - type,
  * space, the few components - is in ceremonies.css.
  */
@@ -182,11 +182,11 @@ export class SimpleCeremonies extends ChimeApp {
           ui.button(GOES_JOIN, { goes_to: JOIN, style: "JoinButton" }),
         ], "Nav"),
       ], "MastRow"),
-      ui.divider("Horizon"),
+      ui.divider("Rule"),
     ], "Header");
 
     const footer = ui.column([
-      ui.divider("Horizon"),
+      ui.divider("Rule"),
       ui.row([ui.text(Phrase.of("Follow her"), "FooterLabel"), this.follow("Icons")], "FooterFollow"),
       ui.text(Phrase.of("Land acknowledgement placeholder: her words, if she chooses to include one."), "Footer").wraps(),
       ui.text(Phrase.with("© %s %s", [new Date().getFullYear(), SITE.author]), "Footer"),
@@ -434,7 +434,7 @@ export class SimpleCeremonies extends ChimeApp {
       this.shareBar(article),
       ui.column([ui.text(Phrase.with("Follow %s", [SITE.author]), "ShareLabel"), this.follow("Buttons")], "EndFollow"),
     ]);
-    const keepReading = [ending, ui.divider("Horizon"), ui.text(Phrase.of("Keep reading"), "Kicker"), ui.column(next.map((other) => this.entry(other, false)), "Entries")];
+    const keepReading = [ending, ui.divider("Rule"), ui.text(Phrase.of("Keep reading"), "Kicker"), ui.column(next.map((other) => this.entry(other, false)), "Entries")];
     const after = [...rest, ...this.endMatter(article)];
     const paywall = ui.surface("Paywall", [
       ui.text(Phrase.of("This piece is for members"), "PaywallTitle"),

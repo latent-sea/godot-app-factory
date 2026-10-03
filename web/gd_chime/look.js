@@ -112,6 +112,9 @@ export const SHEET = `
 .chime-text.Notice { color: var(--chime-accent-2); }
 .chime-text.SectionHeading, .chime-text.FormHeading { font-size: var(--chime-size-words); font-weight: 600; }
 .chime-pressable { appearance: none; font: inherit; color: inherit; background: var(--chime-raised); border: 1px solid var(--chime-edge); border-radius: var(--chime-size-radius); min-height: var(--chime-size-press); padding: calc(var(--chime-size-pad) / 2) var(--chime-size-pad); cursor: pointer; text-align: left; display: inline-flex; align-items: center; gap: var(--chime-size-gap); }
+/* a pressable's words are its label, not text to select: no caret, no text cursor, no selection on a tap */
+.chime-pressable { -webkit-user-select: none; user-select: none; }
+.chime-pressable * { cursor: inherit; }
 .chime-pressable:hover { background: var(--chime-lit); }
 .chime-pressable:focus-visible { outline: 2px solid var(--chime-accent); outline-offset: 2px; }
 .chime-pressable[disabled], .chime-pressable[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
