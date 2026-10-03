@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="Portrait placeholder">
-<rect width="800" height="1000" fill="#dfe3df"/>
-<rect y="620" width="800" height="380" fill="#3f6a72" opacity="0.18"/>
-<line x1="0" y1="620" x2="800" y2="620" stroke="#3f6a72" stroke-width="5"/>
-<circle cx="560" cy="620" r="40" fill="none" stroke="#3f6a72" stroke-width="5"/>
-<text x="48" y="140" font-family="system-ui, sans-serif" font-size="55" fill="#3a4644" letter-spacing="2">PORTRAIT PLACEHOLDER</text>
+<rect width="800" height="1000" fill="#ece0f3"/>
+<rect y="620" width="800" height="380" fill="#dccaea"/>
+<line x1="0" y1="620" x2="800" y2="620" stroke="#8a5aa8" stroke-width="5"/>
+<circle cx="560" cy="620" r="40" fill="#ece0f3" stroke="#8a5aa8" stroke-width="5"/>
+<text x="48" y="140" font-family="system-ui, sans-serif" font-size="55" fill="#4a3a55" letter-spacing="2">PORTRAIT PLACEHOLDER</text>
 </svg>

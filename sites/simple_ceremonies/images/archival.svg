@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-label="Archival photograph placeholder">
-<rect width="1200" height="900" fill="#e3ddd1"/>
-<rect y="558" width="1200" height="342" fill="#6b5a43" opacity="0.18"/>
-<line x1="0" y1="558" x2="1200" y2="558" stroke="#6b5a43" stroke-width="4"/>
-<circle cx="840" cy="558" r="45" fill="none" stroke="#6b5a43" stroke-width="4"/>
-<text x="72" y="126" font-family="system-ui, sans-serif" font-size="50" fill="#4a4236" letter-spacing="2">ARCHIVAL PHOTOGRAPH PLACEHOLDER</text>
+<rect width="1200" height="900" fill="#efe1cc"/>
+<rect y="558" width="1200" height="342" fill="#e3cfb1"/>
+<line x1="0" y1="558" x2="1200" y2="558" stroke="#8a5a2b" stroke-width="4"/>
+<circle cx="840" cy="558" r="45" fill="#efe1cc" stroke="#8a5a2b" stroke-width="4"/>
+<text x="72" y="126" font-family="system-ui, sans-serif" font-size="50" fill="#4e3b2a" letter-spacing="2">ARCHIVAL PHOTOGRAPH PLACEHOLDER</text>
 </svg>

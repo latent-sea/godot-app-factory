@@ -54,6 +54,10 @@ export class StallProbe extends Walk {
     const frame = crateScreen.querySelector("iframe.chime-embed-frame");
     this.claim("pressed, the poster gives way to the page it stood for", !!frame && frame.getAttribute("src") === "embedded.html" && !crateScreen.querySelector(".chime-embed-poster"));
     this.claim("and the frame is named for a reader who cannot see it", frame?.title === "A crate in motion");
+    const [away, here] = crateScreen.querySelectorAll("a.chime-hyperlink");
+    this.claim("a link to another site opens in a new tab, safely", away?.getAttribute("href") === "https://example.org/crates" && away.target === "_blank" && away.rel === "noopener noreferrer");
+    this.claim("and is named for a reader who cannot see it", away?.getAttribute("aria-label") === "More about crates, on another site" && away.textContent === "More about crates");
+    this.claim("a link that stays opens where it is", here?.getAttribute("href") === "embedded.html" && !here.target);
     await this.press(BACKS);
     this.claim("back returns to counting", this.top() === "counting" && this.shows("3 crates counted"));
 
