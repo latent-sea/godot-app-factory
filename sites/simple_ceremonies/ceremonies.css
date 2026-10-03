@@ -1,13 +1,12 @@
-/* Simple Ceremonies' own look, over gd-chime's: friendly sans faces, sea
+/* Simple Ceremonies' own look, over gd-chime's: one friendly sans, sea
    and soil colours from the look's palette (site.js, as --chime-*), and one
    recurring mark - a horizon line with a small sun on it, for the crossings
    the writing returns to. Scoped to #app so it comes before the framework. */
 
-@font-face { font-family: "Bricolage Grotesque"; src: url("fonts/BricolageGrotesque-normal.woff2") format("woff2"); font-weight: 400 800; font-style: normal; font-display: swap; }
-@font-face { font-family: "Figtree"; src: url("fonts/Figtree-normal.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }
-@font-face { font-family: "Figtree"; src: url("fonts/Figtree-italic.woff2") format("woff2"); font-weight: 400 600; font-style: italic; font-display: swap; }
+@font-face { font-family: "Nunito Sans"; src: url("fonts/NunitoSans-normal.woff2") format("woff2"); font-weight: 400 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "Nunito Sans"; src: url("fonts/NunitoSans-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
 
-:root { --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif; --text: "Figtree", "Avenir Next", system-ui, sans-serif; --measure: 40rem; }
+:root { --display: "Nunito Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif; --text: var(--display); --measure: 40rem; }
 html, body { margin: 0; background: #eef1ee; }
 @media (prefers-color-scheme: dark) { html, body { background: #101819; } }
 #app { min-height: 100vh; }
@@ -24,7 +23,7 @@ html, body { margin: 0; background: #eef1ee; }
 #app .Header { gap: 0.9rem; padding-top: 2rem; }
 #app .chime-pressable.Masthead { background: none; border: 0; padding: 0; min-height: 0; color: var(--chime-ink); text-decoration: none; align-self: flex-start; }
 #app .chime-pressable.Masthead[aria-disabled="true"] { opacity: 1; cursor: default; }
-#app .MastheadWords { font-family: var(--display); font-weight: 600; font-size: clamp(2.2rem, 6vw, 3.6rem); letter-spacing: -0.015em; line-height: 1.1; white-space: normal; }
+#app .MastheadWords { font-family: var(--display); font-weight: 750; font-size: clamp(2.2rem, 6vw, 3.6rem); letter-spacing: -0.015em; line-height: 1.1; white-space: normal; }
 #app .Nav { flex-wrap: wrap; gap: 0.25rem 1.25rem; }
 #app .Disciplines { font-size: 0.95rem; color: var(--chime-ink-soft); white-space: normal; }
 #app .chime-pressable.NavLink { background: none; border: 0; border-radius: 0; padding: 0.25rem 0; min-height: 2.25rem; color: var(--chime-ink); }
@@ -49,7 +48,7 @@ html, body { margin: 0; background: #eef1ee; }
 
 /* home */
 #app .IntroBlock { gap: 0.5rem; max-width: var(--measure); }
-#app .Intro { font-family: var(--display); font-size: clamp(1.5rem, 3.2vw, 2.1rem); line-height: 1.25; font-weight: 500; }
+#app .Intro { font-family: var(--display); font-size: clamp(1.5rem, 3.2vw, 2.1rem); line-height: 1.3; font-weight: 600; }
 #app .IntroSmall { font-size: 1rem; color: var(--chime-ink-soft); font-family: var(--text); }
 #app .chime-pressable.InlineLink { display: inline; background: none; border: 0; padding: 0; min-height: 0; color: var(--chime-accent); text-decoration: underline; text-underline-offset: 0.18em; }
 #app .InlineLink .chime-text, #app .InlineWords { display: inline; font: inherit; }
@@ -67,7 +66,7 @@ html, body { margin: 0; background: #eef1ee; }
 #app .chime-pressable.TitleLink { display: block; background: none; border: 0; padding: 0; min-height: 0; text-align: left; color: var(--chime-ink); }
 #app .chime-pressable.TitleLink[aria-disabled="true"] { opacity: 1; }
 #app .chime-pressable.TitleLink:hover .chime-text { color: var(--chime-accent); text-decoration: underline; text-underline-offset: 0.15em; text-decoration-thickness: 1px; }
-#app .EntryTitle, #app .LeadTitle, #app .ArticleTitle, #app .PageTitle { font-family: var(--display); font-weight: 650; letter-spacing: -0.02em; white-space: normal; text-wrap: balance; color: var(--chime-ink); }
+#app .EntryTitle, #app .LeadTitle, #app .ArticleTitle, #app .PageTitle { font-family: var(--display); font-weight: 700; letter-spacing: -0.01em; white-space: normal; text-wrap: balance; color: var(--chime-ink); }
 #app .EntryTitle { font-size: 1.45rem; line-height: 1.2; }
 #app .LeadTitle { font-size: clamp(1.8rem, 3.6vw, 2.6rem); line-height: 1.12; }
 #app .Dek { font-family: var(--text); font-size: 1.1rem; line-height: 1.55; color: var(--chime-ink-soft); white-space: normal; }
@@ -87,7 +86,7 @@ html, body { margin: 0; background: #eef1ee; }
 #app .Epigraph { gap: 0.35rem; margin-block: 0.75rem; padding-inline: 1.5rem; }
 #app .EpigraphWords { font-family: var(--text); font-style: italic; font-size: 1.15rem; line-height: 1.5; white-space: normal; }
 #app .EpigraphSource { font-size: 0.85rem; color: var(--chime-ink-soft); }
-#app .Body { font-family: var(--text); font-size: 1.14rem; line-height: 1.72; white-space: normal; margin: 0; }
+#app .Body { font-family: var(--text); font-size: 1.15rem; line-height: 1.75; white-space: normal; margin: 0; }
 #app .Subhead { font-family: var(--display); font-weight: 600; font-size: 1.45rem; margin-top: 0.75rem; white-space: normal; }
 #app .PullQuote { font-family: var(--display); font-weight: 600; font-size: 1.5rem; line-height: 1.3; color: var(--chime-accent); padding: 0.25rem 0 0.25rem 1.1rem; border-left: 4px solid var(--chime-accent-2); margin-block: 0.75rem; white-space: normal; text-wrap: balance; }
 #app .Figure { gap: 0.4rem; margin-block: 0.5rem; }
