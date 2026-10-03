@@ -13,9 +13,7 @@ work=$(mktemp -d)
 # PostgreSQL won't run as root
 as_pg() { if [ "$(id -u)" = 0 ]; then runuser -u postgres -- "$@"; else "$@"; fi; }
 [ "$(id -u)" = 0 ] && chown postgres "$work"
-# shellcheck disable=SC2329  # run by the trap
-cleanup() { as_pg "$bin/pg_ctl" -D "$work/db" -m immediate stop >/dev/null 2>&1 || true; rm -rf "$work"; }
-trap cleanup EXIT
+trap 'as_pg "$bin/pg_ctl" -D "$work/db" -m immediate stop >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
 
 as_pg "$bin/initdb" -D "$work/db" -U supabase_admin -A trust >/dev/null
 as_pg "$bin/pg_ctl" -D "$work/db" -o "-k $work -c listen_addresses='' -c wal_level=logical" -l "$work/log" -w start >/dev/null
