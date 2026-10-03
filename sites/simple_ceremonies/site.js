@@ -42,9 +42,15 @@ const PLANS = [
   { id: "yearly", name: "Yearly", price: "Price placeholder, a year" },
 ];
 
-/** The look by day and by night: warm Indian pastels - blush, rani pink, marigold - with ink dark enough to read on all of them. */
-const LIGHT = { ground: "#fcf3ec", raised: "#fffaf6", lit: "#f7e6db", ink: "#2e2226", ink_soft: "#6a565b", accent: "#b83f72", accent_2: "#985612", warn: "#a83a2c", edge: "#efd9cc" };
-const DARK = { ground: "#1f1619", raised: "#2a1f23", lit: "#36292e", ink: "#f7ece7", ink_soft: "#c9b6b1", accent: "#f093b8", accent_2: "#f2b96a", warn: "#f0907c", edge: "#463539" };
+/**
+ * The look by day and by night: one colour family. A clay-madder brand
+ * colour and its scale, neutrals tinted from the same warmth, and an ochre
+ * kept for the one small sun. Built in OKLCH so every step is even; every
+ * text colour clears 4.5:1 on its ground. The rest of the system - type,
+ * space, the few components - is in ceremonies.css.
+ */
+const LIGHT = { ground: "#fbf5ef", raised: "#f2e9e2", lit: "#e8ddd4", ink: "#221b15", ink_soft: "#6c6158", accent: "#913e23", accent_2: "#632916", warn: "#9a3b2b", edge: "#dcd2ca" };
+const DARK = { ground: "#15110d", raised: "#1f1a15", lit: "#2a241e", ink: "#f1eae3", ink_soft: "#b2a9a1", accent: "#e2947c", accent_2: "#edb5a4", warn: "#e58c78", edge: "#352f29" };
 
 const screenOf = (article) => `article_${article.slug}`;
 /** Where an article lives, to be shared: this page's address with the article's slug after #. */
@@ -165,15 +171,17 @@ export class SimpleCeremonies extends ChimeApp {
 
     const header = ui.column([
       ui.row([
-        ui.link(GOES_HOME, null, SITE.name, { style: "Masthead", words_style: "MastheadWords" }).goesTo(HOME).grow(),
-        this.follow("Icons"),
+        ui.column([
+          ui.link(GOES_HOME, null, SITE.name, { style: "Masthead", words_style: "MastheadWords" }).goesTo(HOME),
+          ui.text(SITE.disciplines.join(" · "), "Disciplines"),
+        ], "Brand").grow(),
+        ui.row([
+          this.navLink(GOES_HOME, HOME),
+          this.navLink(GOES_ABOUT, ABOUT),
+          this.follow("Icons"),
+          ui.button(GOES_JOIN, { goes_to: JOIN, style: "JoinButton" }),
+        ], "Nav"),
       ], "MastRow"),
-      ui.row([
-        ui.text(SITE.disciplines.join(" · "), "Disciplines").grow(),
-        this.navLink(GOES_HOME, HOME),
-        this.navLink(GOES_ABOUT, ABOUT),
-        ui.button(GOES_JOIN, { goes_to: JOIN, style: "JoinButton" }),
-      ], "Nav"),
       ui.divider("Horizon"),
     ], "Header");
 
