@@ -100,6 +100,7 @@ services:
     volumes:
       - ${PLATFORM_DIR}/factory/platform/supabase/Caddyfile:/etc/caddy/Caddyfile:ro
       - ${PLATFORM_DIR}/secrets/tls:/tls:ro
+      - ${PLATFORM_DIR}/status:/status:ro
       - caddy_data:/data
     mem_limit: 128m
 

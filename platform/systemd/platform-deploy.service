@@ -1,0 +1,8 @@
+[Unit]
+Description=Bring the platform to the factory's main branch, once its checks pass
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/platform-deploy

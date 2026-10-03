@@ -26,6 +26,13 @@ api.{$DOMAIN}:443 {
 	handle @api {
 		reverse_proxy 127.0.0.1:8000
 	}
+	# what the last deploy did (bin/deploy): commits and times, nothing secret
+	handle /platform/status {
+		root * /status
+		rewrite * /status.json
+		header Cache-Control no-store
+		file_server
+	}
 	handle {
 		respond 404
 	}

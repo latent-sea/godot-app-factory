@@ -93,7 +93,10 @@ jobs:
           node-version: 22
 
       - name: Shell scripts
-        run: shellcheck -x platform/setup.sh platform/tenants/*.sh platform/bin/*
+        run: shellcheck -x platform/setup.sh platform/bootstrap.sh platform/tenants/*.sh platform/bin/* platform/checks/*.sh
+
+      - name: Deploying itself (bin/deploy, against a stand-in machine)
+        run: bash platform/checks/test_deploy.sh
 
       - name: First-boot file
         run: python3 -c "import yaml; d = yaml.safe_load(open('platform/cloud-init.yaml')); assert d['runcmd'] and d['write_files']"
