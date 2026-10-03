@@ -9,8 +9,9 @@
 	auto_https off
 }
 
+# Takes the certificate's name: origin, or play-origin for play. on its own domain.
 (cloudflare_only) {
-	tls /tls/origin.pem /tls/origin.key {
+	tls /tls/{args[0]}.pem /tls/{args[0]}.key {
 		client_auth {
 			mode require_and_verify
 			trust_pool file /tls/cloudflare-origin-pull-ca.pem
@@ -20,7 +21,7 @@
 
 # The platform: sign-in, data, live updates, files and functions.
 api.{$DOMAIN}:443 {
-	import cloudflare_only
+	import cloudflare_only origin
 	@api path /auth/v1/* /rest/v1/* /realtime/v1/* /storage/v1/* /functions/v1/* /graphql/v1
 	handle @api {
 		reverse_proxy 127.0.0.1:8000
@@ -32,8 +33,8 @@ api.{$DOMAIN}:443 {
 }
 
 # Lizarding's game server: WebSocket connections, to its service on 127.0.0.1:8100.
-play.{$DOMAIN}:443 {
-	import cloudflare_only
+play.{$PLAY_DOMAIN}:443 {
+	import cloudflare_only {$PLAY_CERT}
 	reverse_proxy 127.0.0.1:8100
 	header -server
 }

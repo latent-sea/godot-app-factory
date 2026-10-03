@@ -19,7 +19,7 @@ Neither side edits the other's part.
 | `cloud-init.yaml` | Pasted into Hetzner when ordering the machine; runs `setup.sh` at first boot |
 | `setup.sh` | Sets up the machine, Supabase, the platform's SQL, Lizarding, and backups |
 | `supabase/platform.yml` | The factory's changes to Supabase's own compose file: only Caddy reachable from outside, memory ceilings, Postgres sized for 8 GB |
-| `supabase/Caddyfile` | The one open door, on 443: `api.<domain>` and `play.<domain>`, answering only Cloudflare |
+| `supabase/Caddyfile` | The one open door, on 443: `api.<domain>` and `play.<play domain>`, answering only Cloudflare |
 | `sql/queues.sql` | Tenants create and drop their own queues (Supabase Queues) through the platform |
 | `sql/delete_player.sql` | Deleting a player everywhere: each tenant's `forget_player`, then the sign-in |
 | `sql/steam.sql`, `functions/steam-signin/` | Steam sign-in: a Steam account is one player, made the first time or linked to the signed-in one. Its logic is `steam.ts`, tested by `node --test platform/functions/steam-signin/steam.test.ts` |
@@ -42,21 +42,25 @@ On Hetzner Cloud, create a server with:
 - **SSH key:** your own public key. Root logs in with it; passwords are off.
 - **Firewall:** a new one allowing inbound TCP 22 (SSH) and TCP 443 only.
 - **Backups:** on. Hetzner keeps 7 daily copies of the whole disk off the machine.
-- **Cloud config:** all of `cloud-init.yaml`, with `DOMAIN=` set to your domain.
+- **Cloud config:** all of `cloud-init.yaml`, with `DOMAIN=` (the platform, `api.`) and
+  `PLAY_DOMAIN=` (Lizarding's game server, `play.`) checked. They may be the same domain.
 
 Setup takes about ten minutes after the server starts. Its log is at
 `/var/log/platform-setup.log`.
 
 ## By hand, after ordering
 
-1. **DNS:** in Cloudflare, add `api` and `play` as A records (and AAAA for
-   IPv6) pointing at the server, proxied (orange cloud).
-2. **Encryption:** under SSL/TLS, set the mode to **Full (strict)** and turn on
-   **Authenticated Origin Pulls**.
-3. **Origin certificate:** under SSL/TLS, Origin Server, create one for
+1. **DNS:** in Cloudflare, add `api` on the platform's domain and `play` on
+   the play domain as A records (and AAAA for IPv6) pointing at the server,
+   proxied (orange cloud).
+2. **Encryption:** on each of the two domains in Cloudflare, under SSL/TLS, set
+   the mode to **Full (strict)** and turn on **Authenticated Origin Pulls**.
+3. **Origin certificates:** under SSL/TLS, Origin Server, create one for
    `*.<domain>` and `<domain>`. Save it on the server as
-   `/srv/platform/secrets/tls/origin.pem` and its key as `origin.key`, then
-   run `docker restart platform-caddy`.
+   `/srv/platform/secrets/tls/origin.pem` and its key as `origin.key`. When
+   the play domain is another domain, create one for it the same way, saved
+   as `play-origin.pem` and `play-origin.key` beside them (a certificate
+   covers one domain). Then run `docker restart platform-caddy`.
 4. **Lizarding's key:** `/srv/platform/factory/platform/bin/add-ssh-key lizarding "<their public key>"`.
 5. **Steam sign-in, when the game is on Steam:** in `/srv/platform/supabase/.env` set
    `STEAM_WEB_API_KEY` (a publisher Web API key, from Steamworks), `STEAM_APP_ID`
@@ -92,7 +96,8 @@ Setup takes about ten minutes after the server starts. Its log is at
   - It keeps running after you log out.
   - It restarts if it stops.
   - It shares one ceiling with all your processes: 2 cores and 2.5 GB.
-- **Players connect:** to `wss://play.<domain>` through Cloudflare. Your
+- **Players connect:** to `wss://play.<play domain>` (`PLAY_URL` and `LISTEN` in
+  `.platform/platform.env`) through Cloudflare. Your
   service listens on `127.0.0.1:8100`.
 - **The database:** connect directly to `127.0.0.1:5432` as `lizarding`.
   - You may hold up to 20 connections.
