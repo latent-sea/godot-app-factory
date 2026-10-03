@@ -8,3 +8,5 @@
 # Exports.
 /build/
 __pycache__/
+# A site's copy of gd-chime for the web, filled by tooling/install_site.py; never edited by hand.
+/sites/*/gd_chime/
