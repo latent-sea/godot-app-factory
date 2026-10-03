@@ -33,8 +33,9 @@ class Factory(unittest.TestCase):
     """A factory with two apps and a pin, beside a local upstream; no tests of its own."""
 
     def setUp(self) -> None:
-        self._tmp = tempfile.TemporaryDirectory()
-        base = Path(self._tmp.name)
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)  # runs even when setUp fails further down
+        base = Path(tmp.name)
 
         # The upstream: an addon folder beside things that must never reach an app.
         self.upstream = base / "upstream"
@@ -53,9 +54,6 @@ class Factory(unittest.TestCase):
             write(self.root / f"apps/{app}/factory.json", json.dumps({"name": app}))
         write(self.root / "apps/not_an_app/readme.txt", "no factory.json here\n")
         self.pin(self.first)
-
-    def tearDown(self) -> None:
-        self._tmp.cleanup()
 
     def pin(self, commit: str, **overrides: str) -> None:
         entry = {"repo": self.upstream.as_uri(), "commit": commit, "copy": "addons/lib", **overrides}
@@ -137,8 +135,30 @@ class InstallTest(Factory):
 
     def test_copy_path_must_stay_inside(self) -> None:
         self.pin(self.first, copy="../escape")
-        with self.assertRaisesRegex(install.InstallError, "path inside the repo"):
+        with self.assertRaisesRegex(install.InstallError, "folder inside the repo"):
             install.install(self.root, [])
+
+    def test_copy_of_the_whole_repo_is_refused(self) -> None:
+        # '.' would make install_into replace the app itself
+        write(self.root / "apps/alpha/alpha.gd", "my work\n")
+        for whole in (".", "./"):
+            self.pin(self.first, copy=whole)
+            with self.subTest(copy=whole), self.assertRaisesRegex(install.InstallError, "folder inside the repo"):
+                install.install(self.root, [])
+        self.assertEqual((self.root / "apps/alpha/alpha.gd").read_text(), "my work\n")
+
+    def test_moving_the_pin_drops_the_old_commit_from_the_cache(self) -> None:
+        install.install(self.root, [])
+        second = self.commit_upstream("addons/lib/newer.gd", "newer\n")
+        self.pin(second)
+        install.install(self.root, [])
+        self.assertEqual([p.name for p in (self.root / ".cache/deps/lib").iterdir()], [second])
+
+    def test_a_fetch_killed_halfway_is_cleaned_up_by_the_next(self) -> None:
+        # what TemporaryDirectory could not remove: the process died inside it
+        write(self.root / ".cache/deps/lib/tmpabc123/repo/.git/HEAD", "ref: refs/heads/main\n")
+        install.install(self.root, [])
+        self.assertEqual([p.name for p in (self.root / ".cache/deps/lib").iterdir()], [self.first])
 
     def test_missing_dependencies_file(self) -> None:
         (self.root / "dependencies.json").unlink()
@@ -230,9 +250,11 @@ class RealServicesTest(unittest.TestCase):
 
 class RealPinTest(unittest.TestCase):
     def test_the_committed_pin_is_well_formed(self) -> None:
-        pins = install.read_pins(install.ROOT)
-        self.assertEqual([p.name for p in pins], ["gd_chime"])
-        self.assertEqual(pins[0].copy, "addons/gd_chime")
+        # read_pins has checked each pin's shape; this checks gd-chime is pinned as D-001 says
+        pins = {p.name: p for p in install.read_pins(install.ROOT)}
+        self.assertIn("gd_chime", pins)
+        self.assertEqual(pins["gd_chime"].copy, "addons/gd_chime")
+        self.assertTrue(pins["gd_chime"].repo.startswith("https://"), pins["gd_chime"].repo)
 
 
 if __name__ == "__main__":

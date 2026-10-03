@@ -71,7 +71,9 @@ Setup takes about ten minutes after the server starts. Its log is at
 - **Logs:** `cd /srv/platform/supabase && docker compose logs -f <service>`.
 - **Updating Supabase:** change `SUPABASE_TAG` in `setup.sh` after reading
   Supabase's changelog. Copy the new release's `docker/` files over
-  `/srv/platform/supabase`, keeping `.env` and `volumes/db/data`. Then run
+  `/srv/platform/supabase`, keeping `.env`, `.supabase-version` and
+  `volumes/db/data`; the factory's `platform.yml` carries every change to the
+  compose file, so nothing in the copied files needs editing. Then run
   `docker compose pull && docker compose up -d`. Take a dump first.
 - **Restoring:** on a fresh machine set up the same way, stop everything but
   the database, then run
@@ -98,8 +100,11 @@ Setup takes about ten minutes after the server starts. Its log is at
 - **Queues:** create them with `select platform.create_queue('lizarding_<name>')`
   and drop them with `select platform.drop_queue(...)`. Use them with pgmq's
   own functions (`pgmq.send`, `pgmq.read`, `pgmq.archive`, ...).
-- **Deleting a player:** provide `lizarding.forget_player(player uuid)`. Until
-  you do, deleting any player fails, so write it first, even as a stub.
+- **Deleting a player:** provide `lizarding.forget_player(player uuid)`, a
+  `security definer` function your role owns (it then runs as you, never as the
+  platform). Until you do, deleting any player fails, so write it first, even
+  as a stub:
+  `create function lizarding.forget_player(player uuid) returns void language sql security definer set search_path = lizarding as 'select';`
   `sql/delete_player.sql` says what it must do.
 - **Backups:** the nightly dump covers your schema. Hetzner's daily disk backup
   covers `/srv/lizarding`. Write files you can't lose atomically (write a new

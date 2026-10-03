@@ -29,7 +29,12 @@ static func save_file(name: String, chosen: String = "", probing: bool = OS.get_
 
 ## Android's Back goes back a screen - closing a pop-up first - or, with
 ## nothing behind, leaves the app. gd-chime doesn't wire Back itself.
+## Safe to call on every describe(): the app keeps one.
 static func answer_back(app: Node) -> Node:
+	var kept: Node = app.get_node_or_null("AndroidBack")
+	if kept is Back:
+		kept._commands = app.commands
+		return kept
 	var back := Back.new(app.commands, func() -> void: app.get_tree().quit())
 	back.name = "AndroidBack"
 	app.add_child(back)

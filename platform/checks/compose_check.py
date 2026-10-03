@@ -20,8 +20,6 @@ config = json.load(sys.stdin)
 services = config["services"]
 
 for name, service in sorted(services.items()):
-    if name in ("db-config", "deno-cache"):
-        continue
     for port in service.get("ports", []):
         if port.get("host_ip") != "127.0.0.1":
             problems.append(f"{name} publishes port {port.get('published')} beyond this machine")

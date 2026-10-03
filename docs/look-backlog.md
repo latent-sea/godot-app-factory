@@ -68,10 +68,10 @@ yet take the accent.
 
 ## Carried over from the Checklist
 
-- Phone sizing (`apps/checklist/phone_look.gd`, D-007).
+- Phone sizing (`services/look/phone.gd`, D-007).
 - The palette, page margins, title size, tick boxes, add field and the
   filled button with its faded disabled state
-  (`apps/checklist/checklist.gd`, `look()`).
+  (now `services/look/look.gd`).
 
 ## Fixed: links stayed faded after they could be used
 
@@ -96,7 +96,7 @@ yet take the accent.
 - **First try, wrong:** the screen was built by the app itself, so it only
   appeared once the app had loaded, flashed for a second, and left the
   blank wait as it was.
-- **Done:** Godot's boot splash is now the name (`services/look/splash.png`,
+- **Done:** Godot's boot splash is now the name (`services/shell/splash.png`,
   drawn by `tooling/make_splash.py`), shown the moment the engine starts.
   The main scene is `opening.tscn`, which draws the same image in the same
   place with the wave moving while `main.tscn` loads on another thread,

@@ -10,8 +10,9 @@ A test is a script apps/<app>/tests/test_*.gd that extends SceneTree. It
 prints "PASS <its file name>" once every claim held, and quits 0. The tests
 of each factory service the app uses (addons/factory_*/tests/) run too, in
 the app, so a service is checked in every app that wears it. The probe
-is gd-chime's own walk of the app's screens, run as `-- --probe` on the main
-scene, which prints "PROBE OK".
+is the app's own probe.gd, built on the factory's testkit
+(addons/factory_testkit/walk.gd), run as `-- --probe` on the main scene;
+it prints "PROBE OK".
 
 A run counts as passing only when three things agree: the process exited 0,
 it printed its pass line, and nothing in its output looks like an error. Any

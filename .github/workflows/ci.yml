@@ -15,7 +15,9 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # A main run publishes APKs to debug-latest; cancelling it halfway would leave
+  # the release with some new APKs and some old ones. Branches can be cancelled.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -31,7 +33,11 @@ jobs:
 
       - name: Read pins
         id: pins
-        run: echo "godot=$(python3 -c "import json; print(json.load(open('dependencies.json'))['godot']['version'])")" >> "$GITHUB_OUTPUT"
+        # an assignment, so a failure stops the step rather than passing on an empty version
+        run: |
+          godot=$(python3 -c "import json; print(json.load(open('dependencies.json'))['godot']['version'])")
+          test -n "$godot"
+          echo "godot=$godot" >> "$GITHUB_OUTPUT"
 
       - name: Cache Godot
         id: godot-cache

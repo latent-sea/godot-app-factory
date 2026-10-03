@@ -49,12 +49,20 @@ fi
 # What the factory hands over sits in .platform: the tenant reads it, can't change it.
 install -d -m 750 -o root -g "$name" "$home/.platform"
 
-# Its database role, once: the password goes to the tenant and to nowhere else.
+# Its database role, once: the password goes to the tenant and to nowhere else,
+# so it travels to psql on stdin, never on a command line that ps would show.
+# If the role is there but its handover file isn't (a run that stopped between
+# the two), the password is set afresh and handed over.
 cd "$PLATFORM_DIR/supabase"
-exists=$(docker compose exec -T db psql -qXAt -U supabase_admin -d postgres -c "select 1 from pg_roles where rolname = '$name'")
-if [ "$exists" != "1" ]; then
+admin_sql() { docker compose exec -T db psql -qX -v ON_ERROR_STOP=1 -U supabase_admin -d postgres "$@"; }
+exists=$(admin_sql -At -c "select 1 from pg_roles where rolname = '$name'")
+if [ "$exists" != "1" ] || [ ! -f "$home/.platform/db.env" ]; then
   password=$(openssl rand -hex 24)
-  docker compose exec -T db psql -qX -v ON_ERROR_STOP=1 -v tenant_password="$password" -U supabase_admin -d postgres < "$FACTORY/tenants/$name.sql"
+  if [ "$exists" != "1" ]; then
+    { printf "\\set tenant_password '%s'\n" "$password"; cat "$FACTORY/tenants/$name.sql"; } | admin_sql
+  else
+    printf "alter role %s password '%s';\n" "$name" "$password" | admin_sql
+  fi
   umask 027
   cat > "$home/.platform/db.env" <<EOF
 # $name's database: its role, from this machine only. Made by the factory; keep it secret.

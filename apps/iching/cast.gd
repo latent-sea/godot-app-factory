@@ -13,6 +13,8 @@ const CASTS_AGAIN := &"casts_again"
 
 var question := value("")
 var lines := value([])
+## How many casts have been finished, so a result screen can tell a new one from coming back to it.
+var finished := 0
 var _rng := RandomNumberGenerator.new()
 var _door: Object  # the app's commands, to move on after the sixth line
 var _cast_place: StringName
@@ -48,6 +50,8 @@ func told(action: StringName, payload: Dictionary) -> GdChime.Phrase:
 		CASTS:
 			var map := H.fresh_map(_rng)
 			lines.set_value(lines.read() + [map[payload["picked"]]])
+			if lines.read().size() == H.LINES:
+				finished += 1
 			if lines.read().size() == H.LINES and _door != null:
 				return _door.dispatch(GdChime.Chimes.GLOBAL, GdChime.Driver.GO, {"place": _result_place})
 		CASTS_AGAIN:

@@ -166,12 +166,48 @@ func _refreshing() -> void:
 	_claim(platform.last_header("Authorization") == "Bearer new", "and the call goes with the new token")
 	_claim(backend.player_id() == "player-1", "the player stays the same, though the refresh answer didn't repeat them")
 
+	# two calls at once with a session about to run out: one refresh, both calls with its token
+	var both := Platform.new()
+	var busy := fresh(both, 1000.0)
+	busy.session = session("old", 1030.0)
+	var held: Array = []  # the refresh's answer waits until both calls are under way
+	busy.transport = func(method: String, at: String, headers: PackedStringArray, body: String) -> Array:
+		if at.ends_with("grant_type=refresh_token"):
+			while held.is_empty():
+				await process_frame
+		return both.request(method, at, headers, body)
+	both.answer(200, {"access_token": "once", "refresh_token": "r-once", "expires_in": 3600})
+	both.answer(200, [])
+	both.answer(200, [])
+	var done := [0]
+	var call := func() -> void:
+		await busy.select("notes")
+		done[0] += 1
+	call.call()
+	call.call()
+	held.append(true)
+	while done[0] < 2:
+		await process_frame
+	var refreshes := both.asked.filter(func(asked: Array) -> bool: return asked[1].ends_with("grant_type=refresh_token"))
+	_claim(refreshes.size() == 1, "calls made during a refresh wait for it rather than refreshing again")
+	_claim(both.last_header("Authorization") == "Bearer once", "and go with its new token")
+
+	# a refresh refused during a call signs the player out
+	var revoked := Platform.new()
+	var gone := fresh(revoked, 1000.0)
+	gone.session = session("old", 1030.0)
+	revoked.answer(400, {"error_description": "Invalid Refresh Token"})
+	revoked.answer(401, {"message": "JWT expired"})
+	await gone.select("notes")
+	_claim(not gone.is_signed_in() and not FileAccess.file_exists(KEPT), "a refresh refused during a call signs the player out")
+
 
 func _restoring() -> void:
 	var platform := Platform.new()
 	var first := fresh(platform, 1000.0)
 	first.session = session("kept", 5000.0)
 	first._keep(first.session)
+	_claim(FileAccess.file_exists(KEPT) and not FileAccess.file_exists(KEPT + ".tmp"), "the session is written whole, then put in place")
 	var again := Backend.new(URL, KEY, KEPT)
 	_made.append(again)
 	again.transport = platform.request
@@ -182,8 +218,11 @@ func _restoring() -> void:
 	_made.append(later)
 	later.transport = platform.request
 	later.clock = func() -> float: return 9000.0
+	var heard := [""]
+	later.signed_in.connect(func(id: String) -> void: heard[0] = id)
 	var offline := await later.restore()
 	_claim(offline and later.is_signed_in(), "a run-out session kept while offline stays, for a refresh later")
+	_claim(heard[0] == "player-1", "and says who is signed in, as any restore does")
 
 	platform.answer(400, {"error_description": "Invalid Refresh Token"})
 	var refused := Backend.new(URL, KEY, KEPT)
@@ -233,8 +272,13 @@ func _live() -> void:
 	await backend.refresh()
 	_claim(sent[-1]["event"] == "access_token" and sent[-1]["payload"]["access_token"] == "fresher", "a refreshed token is handed to joined channels")
 
+	backend.hear_live(JSON.stringify({"topic": "realtime:notes", "event": "postgres_changes", "payload": {"data": null}}))
+	_claim(changes.size() == 1, "a change with no data is passed over")
+
 	backend.hear_live(JSON.stringify({"topic": "realtime:notes", "event": "phx_error", "payload": {}}))
-	_claim(not room.is_joined and sent[-1]["event"] == "phx_join", "a channel the server drops is joined again")
+	_claim(not room.is_joined and sent[-1]["event"] != "phx_join", "a channel the server drops waits before joining again")
+	backend._tick_rejoins(1.5)
+	_claim(sent[-1]["event"] == "phx_join", "then joins again")
 	backend._live_closed()
 	_claim(not room.is_joined and backend._reconnect_in == 1.0, "a closed socket is tried again after a second")
 	var failed := [""]
@@ -242,8 +286,17 @@ func _live() -> void:
 	backend.live_opened()
 	backend.hear_live(JSON.stringify({"topic": "realtime:notes", "event": "phx_reply", "ref": sent[-1]["ref"], "payload": {"status": "error", "response": {"reason": "Unauthorized"}}}))
 	_claim(failed[0] == "Unauthorized" and not room.is_joined, "a refused join says why")
+	backend.hear_live(JSON.stringify({"topic": "realtime:notes", "event": "phx_reply", "ref": sent[-1]["ref"], "payload": {"status": "ok"}}))
+	_claim(room.is_joined, "a later ok joins it")
+
+	platform.answer(204)
+	await backend.sign_out()
+	_claim(sent[-2]["event"] == "phx_leave" and sent[-1]["event"] == "phx_join" and not sent[-1]["payload"].has("access_token"), "signing out joins the channel again as nobody")
+	backend.hear_live(JSON.stringify({"topic": "realtime:notes", "event": "phx_reply", "ref": sent[-1]["ref"], "payload": {"status": "ok"}}))
+
 	room.leave()
 	_claim(not room._wanted, "leaving stops it rejoining")
+	_claim(not backend._want_live and backend.channel("notes") != room, "with no channel wanted, the live socket closes and the channel is let go")
 
 
 func _claim(held: bool, what: String) -> void:

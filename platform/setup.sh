@@ -80,9 +80,15 @@ if [ ! -d "$PLATFORM_DIR/supabase" ]; then
   # an EC P-256 signing key: tokens are ES256, and their public keys are published
   sh utils/add-new-auth-keys.sh --update-env >/dev/null
 
+  # the key scripts leave .old copies of the files they edit; one holds the secrets
+  rm -f .env.old docker-compose.yml.old
+
   set_env() { sed -i "s|^$1=.*|$1=$2|" .env; grep -q "^$1=" .env || echo "$1=$2" >> .env; }
   set_env SUPABASE_PUBLIC_URL "https://api.$DOMAIN"
-  set_env API_EXTERNAL_URL "https://api.$DOMAIN"
+  # the sign-in service's own address, with its path: it is the tokens' issuer
+  # (iss, what tenants/add-tenant.sh hands over as TOKEN_ISSUER) and the base of
+  # OAuth callbacks (API_EXTERNAL_URL/callback)
+  set_env API_EXTERNAL_URL "https://api.$DOMAIN/auth/v1"
   set_env SITE_URL "https://api.$DOMAIN"
   set_env ENABLE_ANONYMOUS_USERS true
   set_env PLATFORM_DOMAIN "$DOMAIN"
@@ -94,8 +100,17 @@ fi
 cd "$PLATFORM_DIR/supabase"
 say "starting the platform"
 docker compose up -d
-until docker compose exec -T db pg_isready -U postgres -h localhost >/dev/null 2>&1; do sleep 2; done
-until curl -fs -o /dev/null http://127.0.0.1:8000/auth/v1/health -H "apikey: $(grep '^SUPABASE_PUBLISHABLE_KEY=' .env | cut -d= -f2-)"; do sleep 2; done
+# wait for the database, then for sign-in through the gateway; give up after ten
+# minutes rather than hang first boot forever
+wait_for() {
+  local tries=300
+  until "$@" >/dev/null 2>&1; do
+    if ! (( --tries )); then echo "gave up waiting for: $*" >&2; docker compose ps >&2; exit 1; fi
+    sleep 2
+  done
+}
+wait_for docker compose exec -T db pg_isready -U postgres -h localhost
+wait_for curl -fs -o /dev/null http://127.0.0.1:8000/auth/v1/health -H "apikey: $(grep '^SUPABASE_PUBLISHABLE_KEY=' .env | cut -d= -f2-)"
 
 say "the platform's SQL"
 admin_sql() { docker compose exec -T db psql -qX -v ON_ERROR_STOP=1 -U supabase_admin -d postgres; }

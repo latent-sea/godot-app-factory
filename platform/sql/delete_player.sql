@@ -9,6 +9,15 @@
 -- tried again later. So a tenant's function must be quick (well under the
 -- 30 s statement limit), safe to run twice, and succeed for a player it has
 -- never seen.
+--
+-- The tenant's function must be SECURITY DEFINER and owned by the tenant (the
+-- owner of its schema), and should set its own search_path:
+--   create function lizarding.forget_player(player uuid) returns void
+--   language plpgsql security definer set search_path = lizarding as $$ ... $$;
+-- The platform runs as the database's superuser, so a plain (security invoker)
+-- function would run with the superuser's rights; a security definer one runs
+-- with its owner's, the tenant's, and can't SET ROLE back. The platform checks
+-- both before calling, and deletes nothing otherwise.
 -- Run by the factory as supabase_admin; safe to run again.
 
 \set ON_ERROR_STOP on
@@ -25,10 +34,19 @@ create or replace function platform.delete_player(player uuid) returns void
 language plpgsql security definer set search_path = pg_catalog as $$
 declare
   tenant record;
+  func record;
 begin
   for tenant in select schema_name from platform.tenants order by schema_name loop
-    if to_regprocedure(format('%I.forget_player(uuid)', tenant.schema_name)) is null then
+    select p.prosecdef, p.proowner = n.nspowner as tenant_owned
+      into func
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where p.oid = to_regprocedure(format('%I.forget_player(uuid)', tenant.schema_name));
+    if not found then
       raise exception 'tenant % has not provided %.forget_player(uuid); nothing was deleted', tenant.schema_name, tenant.schema_name;
+    end if;
+    -- it runs as its owner, never as the platform's superuser
+    if not func.prosecdef or not func.tenant_owned then
+      raise exception '%.forget_player(uuid) must be security definer and owned by the owner of schema %; nothing was deleted', tenant.schema_name, tenant.schema_name;
     end if;
     execute format('select %I.forget_player($1)', tenant.schema_name) using player;
   end loop;

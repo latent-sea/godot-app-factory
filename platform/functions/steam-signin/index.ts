@@ -33,7 +33,10 @@ async function json(response: Response, what: string): Promise<any> {
 const deps: Deps = {
   async verifyTicket(ticket) {
     const query = new URLSearchParams({ key: env('STEAM_WEB_API_KEY'), appid: env('STEAM_APP_ID'), ticket, identity: env('STEAM_IDENTITY') })
-    const response = await fetch(`https://partner.steam-api.com/ISteamUserAuth/AuthenticateUserTicket/v1/?${query}`)
+    // a failed fetch names its URL, and the URL carries the key: never let that reach the log
+    const response = await fetch(`https://partner.steam-api.com/ISteamUserAuth/AuthenticateUserTicket/v1/?${query}`).catch(() => {
+      throw new Error('Steam did not answer')
+    })
     const body = await response.json().catch(() => null)
     const params = body?.response?.params
     if (params?.result === 'OK' && typeof params.steamid === 'string') {
@@ -54,8 +57,8 @@ const deps: Deps = {
   async addLink(steamId, playerId) {
     return await json(await platform('/rest/v1/rpc/platform_link_steam', { method: 'POST', body: JSON.stringify({ steam_id: steamId, player: playerId }) }), 'linking Steam')
   },
-  async createPlayer(email, steamId) {
-    const made = await json(await platform('/auth/v1/admin/users', { method: 'POST', body: JSON.stringify({ email, email_confirm: true, app_metadata: { steam_id: steamId } }) }), 'creating the player')
+  async createPlayer(email) {
+    const made = await json(await platform('/auth/v1/admin/users', { method: 'POST', body: JSON.stringify({ email, email_confirm: true }) }), 'creating the player')
     return made.id
   },
   async playerEmail(playerId) {

@@ -45,8 +45,21 @@ func _process(delta: float) -> void:
 	if probing or _faded:
 		return
 	_waited += delta
-	if app == null and ResourceLoader.load_threaded_get_status(APP) == ResourceLoader.THREAD_LOAD_LOADED:
-		_open((ResourceLoader.load_threaded_get(APP) as PackedScene).instantiate())
+	if app == null:
+		var status := ResourceLoader.load_threaded_get_status(APP)
+		var scene: PackedScene = null
+		if status == ResourceLoader.THREAD_LOAD_LOADED:
+			scene = ResourceLoader.load_threaded_get(APP)
+		elif status == ResourceLoader.THREAD_LOAD_FAILED or status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			# the thread gave up: load it here instead, which names what is wrong in the log
+			scene = load(APP)
+			if scene == null:
+				push_error("opening: %s could not be loaded" % APP)
+				_faded = true
+				return
+		if scene == null:
+			return
+		_open(scene.instantiate())
 		# under the cover, which still shows
 		move_child(cover, -1)
 	if app != null and _waited >= LEAST:

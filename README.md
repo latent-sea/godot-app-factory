@@ -415,9 +415,9 @@ Where practical, non-Android implementations or graceful unsupported-platform be
 
 Applications are expected to share backend infrastructure.
 
-The backend architecture has not yet been selected.
+The backend is self-hosted Supabase on one machine the factory runs, with Lizarding as a tenant on it (docs/decisions/D-010, D-011). Apps reach it through the `backend` service (services/backend), and the machine's set-up lives in platform/.
 
-The factory should establish a clean application-facing boundary for backend communication without prematurely committing every application to a particular server implementation.
+Apps talk only to the `backend` service, never to Supabase directly, so the boundary stays in one place.
 
 Likely common concerns include:
 

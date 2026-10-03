@@ -43,17 +43,27 @@ services:
     ports: !override ["127.0.0.1:6543:6543"]
     mem_limit: 256m
 
+  # Tokens are ES256, signed with the keys utils/add-new-auth-keys.sh put in
+  # .env. Supabase's own file only reads them where that script uncomments four
+  # lines of it; declaring them here keeps them when the file is replaced on an
+  # update (README, "Updating Supabase").
   realtime:
     mem_limit: 512m
+    environment:
+      API_JWT_JWKS: ${JWT_JWKS:-{"keys":[]}}
 
   auth:
     mem_limit: 128m
+    environment:
+      GOTRUE_JWT_KEYS: ${JWT_KEYS:-[]}
 
   rest:
     mem_limit: 128m
 
   storage:
     mem_limit: 192m
+    environment:
+      JWT_JWKS: ${JWT_JWKS:-{"keys":[]}}
 
   imgproxy:
     mem_limit: 128m
@@ -64,6 +74,7 @@ services:
   functions:
     mem_limit: 384m
     environment:
+      SUPABASE_JWKS: ${JWT_JWKS:-{"keys":[]}}
       # Steam sign-in (functions/steam-signin): set these three in .env once Steam is set up
       STEAM_WEB_API_KEY: ${STEAM_WEB_API_KEY:-}
       STEAM_APP_ID: ${STEAM_APP_ID:-}

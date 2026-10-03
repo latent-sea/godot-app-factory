@@ -38,6 +38,8 @@ const RECONNECT_WAITS: Array[float] = [1.0, 2.0, 5.0, 10.0, 30.0]
 
 signal signed_in(player_id: String)
 signal signed_out
+# A refresh finished, with its Reply: calls made while it ran wait for it.
+signal _refresh_done(reply: Reply)
 
 var url: String
 var key: String
@@ -61,6 +63,7 @@ var _reconnect_in := -1.0
 var _reconnects := 0
 var _channels: Dictionary = {}  # topic -> Channel
 var _refreshing: bool = false
+var _heartbeat_ref := ""  # the heartbeat the server hasn't answered yet
 
 
 ## What a call answers.
@@ -113,12 +116,10 @@ func restore() -> bool:
 		return false
 	session = kept
 	if _expiring():
-		var refreshed := await refresh()
-		if not refreshed.ok:
-			# a refresh the server refuses means signed out; a network failure keeps the session for later
-			if refreshed.status != 0:
-				_forget()
-			return is_signed_in()
+		# a refresh the server refuses signs the player out; a network failure keeps the session for later
+		await refresh()
+		if not is_signed_in():
+			return false
 	signed_in.emit(player_id())
 	return true
 
@@ -168,8 +169,13 @@ func use_session(made: Dictionary) -> Reply:
 	return await _start_session(Reply.new(200, made))
 
 
-## A fresh access token for the session, before the old one runs out.
+## A fresh access token for the session, before the old one runs out. One
+## at a time: asked again while one runs, it answers that one's Reply. A
+## refresh the server refuses (the session was revoked) signs the player out;
+## no answer at all keeps the session, to try again later.
 func refresh() -> Reply:
+	if _refreshing:
+		return await _refresh_done
 	if not session.has("refresh_token"):
 		return Reply.new(401, null, "Nobody is signed in")
 	_refreshing = true
@@ -177,8 +183,10 @@ func refresh() -> Reply:
 	_refreshing = false
 	if reply.ok and reply.data is Dictionary and reply.data.has("access_token"):
 		_keep(reply.data)
-		for channel: Channel in _channels.values():
-			channel._token_changed()
+		_tell_channels()
+	elif reply.status >= 400 and reply.status < 500:
+		_forget()
+	_refresh_done.emit(reply)
 	return reply
 
 
@@ -191,6 +199,7 @@ func sign_out() -> void:
 func _start_session(reply: Reply) -> Reply:
 	if reply.ok and reply.data is Dictionary and reply.data.has("access_token"):
 		_keep(reply.data)
+		_tell_channels()
 		signed_in.emit(player_id())
 	elif reply.ok:
 		return Reply.new(reply.status, reply.data, "The server didn't sign anyone in")
@@ -204,10 +213,13 @@ func _keep(made: Dictionary) -> void:
 	if not kept.has("user") and session.has("user"):
 		kept["user"] = session["user"]
 	session = kept
-	var file := FileAccess.open(session_file, FileAccess.WRITE)
+	# written whole, then put in place, so a run killed mid-write keeps the last good session
+	var writing := session_file + ".tmp"
+	var file := FileAccess.open(writing, FileAccess.WRITE)
 	if file != null:
 		file.store_string(JSON.stringify(session))
 		file.close()
+		DirAccess.rename_absolute(ProjectSettings.globalize_path(writing), ProjectSettings.globalize_path(session_file))
 
 
 func _forget() -> void:
@@ -216,7 +228,14 @@ func _forget() -> void:
 	if FileAccess.file_exists(session_file):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(session_file))
 	if was:
+		_tell_channels()
 		signed_out.emit()
+
+
+# Joined channels go on as whoever is signed in now.
+func _tell_channels() -> void:
+	for channel: Channel in _channels.values():
+		channel._token_changed()
 
 
 func _expiring() -> bool:
@@ -270,7 +289,7 @@ func _auth(method: String, path: String, body: Variant, with_session: bool = tru
 
 
 func _call(method: String, at: String, body: Variant, extra: Array = [], with_session: bool = true) -> Reply:
-	if with_session and not _refreshing and _expiring():
+	if with_session and (_refreshing or _expiring()):
 		await refresh()
 	var headers := PackedStringArray(["apikey: " + key, "Content-Type: application/json"])
 	if with_session and is_signed_in():
@@ -326,6 +345,8 @@ class Channel extends RefCounted:
 	var _changes: Array = []
 	var _wanted := false
 	var _join_ref := ""
+	var _rejoin_in := -1.0  # seconds until joining again after the server dropped it
+	var _rejoins := 0
 
 	func _init(backend: Node, named: String) -> void:
 		_backend = backend
@@ -341,20 +362,31 @@ class Channel extends RefCounted:
 		return self
 
 	func join() -> void:
+		if not is_instance_valid(_backend):
+			return
 		_wanted = true
+		_backend._channels[topic] = self
 		_backend._live_wanted()
 		if _backend._live_open:
 			_send_join()
 
+	## Stops listening. The live socket closes once no channel is wanted.
 	func leave() -> void:
 		_wanted = false
+		_rejoin_in = -1.0
+		if not is_instance_valid(_backend):
+			return
 		if is_joined:
 			_backend._send(topic, "phx_leave", {})
 		is_joined = false
+		if _backend._channels.get(topic) == self:
+			_backend._channels.erase(topic)
+		_backend._live_unwanted()
 
 	## A message to everyone else on this channel.
 	func send_broadcast(event: String, payload: Dictionary) -> void:
-		_backend._send(topic, "broadcast", {"type": "broadcast", "event": event, "payload": payload}, _join_ref)
+		if is_instance_valid(_backend):
+			_backend._send(topic, "broadcast", {"type": "broadcast", "event": event, "payload": payload}, _join_ref)
 
 	func _send_join() -> void:
 		var config := {"broadcast": {"self": false}, "presence": {"key": ""}, "postgres_changes": _changes}
@@ -364,8 +396,15 @@ class Channel extends RefCounted:
 		_join_ref = _backend._send(topic, "phx_join", payload, "", true)
 
 	func _token_changed() -> void:
-		if is_joined:
+		if not is_joined:
+			return
+		if _backend.is_signed_in():
 			_backend._send(topic, "access_token", {"access_token": _backend.session["access_token"]}, _join_ref)
+		else:
+			# signed out: the channel can't go on as the player, so it joins again as nobody
+			_backend._send(topic, "phx_leave", {}, _join_ref)
+			is_joined = false
+			_send_join()
 
 	func _heard(message: Dictionary) -> void:
 		var payload: Dictionary = message.get("payload", {}) if message.get("payload") is Dictionary else {}
@@ -375,20 +414,25 @@ class Channel extends RefCounted:
 					return
 				if payload.get("status") == "ok":
 					is_joined = true
+					_rejoins = 0
+					_backend._reconnects = 0
 					joined.emit()
 				else:
 					is_joined = false
 					var response: Variant = payload.get("response", {})
 					join_failed.emit(str(response.get("reason", "refused")) if response is Dictionary else "refused")
 			"postgres_changes":
-				var data: Dictionary = payload.get("data", {})
+				if not (payload.get("data") is Dictionary):
+					return
+				var data: Dictionary = payload["data"]
 				changed.emit({"type": data.get("type", ""), "table": data.get("table", ""), "record": data.get("record", {}), "old_record": data.get("old_record", {})})
 			"broadcast":
 				broadcast_received.emit(str(payload.get("event", "")), payload.get("payload", {}) if payload.get("payload") is Dictionary else {})
 			"phx_error", "phx_close":
 				is_joined = false
-				if _wanted and _backend._live_open:
-					_send_join()
+				if _wanted:
+					_rejoin_in = RECONNECT_WAITS[mini(_rejoins, RECONNECT_WAITS.size() - 1)]
+					_rejoins += 1
 
 
 func _live_wanted() -> void:
@@ -396,6 +440,17 @@ func _live_wanted() -> void:
 		return
 	_want_live = true
 	_connect_live()
+
+
+## No channel is wanted any more: the live socket closes, and isn't tried again.
+func _live_unwanted() -> void:
+	for channel: Channel in _channels.values():
+		if channel._wanted:
+			return
+	_want_live = false
+	_live_open = false
+	_reconnect_in = -1.0
+	_socket.close()
 
 
 func _connect_live() -> void:
@@ -408,8 +463,8 @@ func _connect_live() -> void:
 ## The live socket is open: every wanted channel joins.
 func live_opened() -> void:
 	_live_open = true
-	_reconnects = 0
 	_heartbeat_in = HEARTBEAT
+	_heartbeat_ref = ""
 	for channel: Channel in _channels.values():
 		if channel._wanted:
 			channel._send_join()
@@ -428,6 +483,10 @@ func _live_closed() -> void:
 func hear_live(text: String) -> void:
 	var message: Variant = JSON.parse_string(text)
 	if not (message is Dictionary):
+		return
+	if message.get("topic") == "phoenix" and str(message.get("ref", "")) == _heartbeat_ref:
+		_heartbeat_ref = ""
+		_reconnects = 0
 		return
 	var channel: Channel = _channels.get(str(message.get("topic", "")))
 	if channel != null:
@@ -452,8 +511,21 @@ func _socket_send(text: String) -> void:
 		_socket.send_text(text)
 
 
+# Channels the server dropped join again once their wait is up.
+func _tick_rejoins(delta: float) -> void:
+	for channel: Channel in _channels.values():
+		if channel._rejoin_in < 0.0:
+			continue
+		channel._rejoin_in -= delta
+		if channel._rejoin_in < 0.0 and channel._wanted and not channel.is_joined:
+			channel._send_join()
+
+
 func _process(delta: float) -> void:
 	if not _want_live:
+		# a socket told to close is polled until it has
+		if _socket.get_ready_state() != WebSocketPeer.STATE_CLOSED:
+			_socket.poll()
 		return
 	if _reconnect_in >= 0.0:
 		_reconnect_in -= delta
@@ -467,10 +539,16 @@ func _process(delta: float) -> void:
 				live_opened()
 			while _socket.get_available_packet_count() > 0:
 				hear_live(_socket.get_packet().get_string_from_utf8())
+			_tick_rejoins(delta)
 			_heartbeat_in -= delta
 			if _heartbeat_in <= 0.0:
 				_heartbeat_in = HEARTBEAT
-				_send("phoenix", "heartbeat", {})
+				if not _heartbeat_ref.is_empty():
+					# the last heartbeat went unanswered: the connection is dead though the socket looks open
+					_socket.close()
+					_live_closed()
+					return
+				_heartbeat_ref = _send("phoenix", "heartbeat", {})
 				# keep the live token fresh too, without waiting for a call to need it
 				if _expiring() and not _refreshing:
 					refresh()

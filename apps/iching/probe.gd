@@ -87,6 +87,7 @@ func run() -> void:
 	await _press_link(&"goes_back")
 	await _press_link(&"goes_back")
 	claim("back from the list returns to the result", top() == &"result")
+	claim("still saying it was copied: coming back isn't a new cast", shows("Copied"))
 
 	# Copy with the prompt: Copy waits for every placeholder.
 	await _open_copy()

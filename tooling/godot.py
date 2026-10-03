@@ -35,6 +35,8 @@ def find(given: str | None = None, root: Path = ROOT) -> str:
         done = subprocess.run([candidate, "--headless", "--version"], capture_output=True, text=True, timeout=120)
     except (FileNotFoundError, PermissionError):
         raise ToolError(f"cannot run Godot at {candidate}") from None
+    except subprocess.TimeoutExpired:
+        raise ToolError(f"Godot at {candidate} did not report its version within 120s; stopped") from None
     # '4.6.2.stable.official.71f334935' against the tag '4.6.2-stable'
     have = done.stdout.strip().splitlines()[-1] if done.stdout.strip() else ""
     want = pinned_version(root).replace("-", ".")
