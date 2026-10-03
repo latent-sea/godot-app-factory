@@ -1,5 +1,6 @@
-/* Simple Ceremonies' own look, over gd-chime's: one friendly sans, sea
-   and soil colours from the look's palette (site.js, as --chime-*), and one
+/* Simple Ceremonies' own look, over gd-chime's: one friendly sans, warm
+   Indian pastels from the look's palette (site.js, as --chime-*) and a soft
+   pastel for each thread below, and one
    recurring mark - a horizon line with a small sun on it, for the crossings
    the writing returns to. Scoped to #app so it comes before the framework. */
 
@@ -7,8 +8,14 @@
 @font-face { font-family: "Nunito Sans"; src: url("fonts/NunitoSans-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
 
 :root { --display: "Nunito Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif; --text: var(--display); --measure: 40rem; }
-html, body { margin: 0; background: #eef1ee; }
-@media (prefers-color-scheme: dark) { html, body { background: #101819; } }
+html, body { margin: 0; background: #fcf3ec; }
+@media (prefers-color-scheme: dark) { html, body { background: #1f1619; } }
+
+/* a pastel for each thread, by day and after dark; ink stays dark on them all */
+#app { --t-migration: #dcebf8; --t-place: #d9f0e3; --t-trauma: #fbe0ea; --t-post_indenture: #fde3d0; --t-animism: #ebe1f6; --t-indigeneity: #fcefc7; --t-all: #f3e3dc; --t-ink: #2e2226; }
+@media (prefers-color-scheme: dark) { #app { --t-migration: #2c3a48; --t-place: #2a3f35; --t-trauma: #4a2a37; --t-post_indenture: #4a3326; --t-animism: #3b3049; --t-indigeneity: #4a4026; --t-all: #3a2d2c; --t-ink: #f7ece7; } }
+#app .t-migration { --tint: var(--t-migration); } #app .t-place { --tint: var(--t-place); } #app .t-trauma { --tint: var(--t-trauma); }
+#app .t-post_indenture { --tint: var(--t-post_indenture); } #app .t-animism { --tint: var(--t-animism); } #app .t-indigeneity { --tint: var(--t-indigeneity); } #app .t-all { --tint: var(--t-all); }
 #app { min-height: 100vh; }
 #app.chime-look { font-family: var(--text); }
 #app .chime-app { max-width: 68rem; padding-inline: clamp(1rem, 4vw, 2.5rem); padding-block: 0 2.5rem; gap: 2.25rem; }
@@ -17,7 +24,7 @@ html, body { margin: 0; background: #eef1ee; }
 
 /* the horizon: a line, and a small sun resting on it */
 #app .chime-divider.Horizon { position: relative; height: 1px; border: 0; background: var(--chime-edge); overflow: visible; margin: 0; }
-#app .chime-divider.Horizon::after { content: ""; position: absolute; left: 72%; top: -0.4rem; width: 0.8rem; height: 0.8rem; border-radius: 50%; border: 1px solid var(--chime-accent-2); background: var(--chime-ground); }
+#app .chime-divider.Horizon::after { content: ""; position: absolute; left: 72%; top: -0.45rem; width: 0.9rem; height: 0.9rem; border-radius: 50%; background: #f2b04f; box-shadow: 0 0 0 4px var(--chime-ground); }
 
 /* the header */
 #app .Header { gap: 0.9rem; padding-top: 2rem; }
@@ -40,7 +47,7 @@ html, body { margin: 0; background: #eef1ee; }
 /* labels */
 #app .Kicker { font-size: 0.9rem; font-weight: 700; color: var(--chime-accent-2); }
 #app .ThreadTags { flex-wrap: wrap; gap: 0.4rem; }
-#app .ThreadTag { font-size: 0.8rem; font-weight: 600; color: var(--chime-accent); border: 1px solid color-mix(in srgb, var(--chime-accent) 35%, transparent); border-radius: 999px; padding: 0.15rem 0.6rem; white-space: nowrap; }
+#app .ThreadTag { font-size: 0.8rem; font-weight: 700; color: var(--t-ink); background: var(--tint, var(--chime-lit)); border-radius: 999px; padding: 0.2rem 0.7rem; white-space: nowrap; }
 #app .MetaRow { gap: 0.75rem; flex-wrap: wrap; }
 #app .Meta { font-size: 0.82rem; color: var(--chime-ink-soft); }
 #app .MembersBadge { font-size: 0.82rem; font-weight: 700; color: var(--chime-accent-2); }
@@ -54,8 +61,9 @@ html, body { margin: 0; background: #eef1ee; }
 #app .InlineLink .chime-text, #app .InlineWords { display: inline; font: inherit; }
 #app .Threads { gap: 0.75rem; }
 #app .Chips { flex-wrap: wrap; gap: 0.5rem; }
-#app .chime-pressable.Chip { min-height: 2.25rem; padding: 0 0.95rem; border-radius: 999px; background: transparent; font-size: 0.9rem; }
-#app .chime-pressable.Chip.chime-current { background: var(--chime-accent); border-color: var(--chime-accent); color: var(--chime-raised); }
+#app .chime-pressable.Chip { min-height: 2.25rem; padding: 0 1rem; border-radius: 999px; background: var(--tint); border-color: transparent; color: var(--t-ink); font-size: 0.92rem; font-weight: 600; }
+#app .chime-pressable.Chip:hover { filter: brightness(0.97); }
+#app .chime-pressable.Chip.chime-current { box-shadow: inset 0 0 0 2px var(--chime-accent); }
 #app .ThreadIntro { font-family: var(--text); font-style: italic; font-size: 1.1rem; color: var(--chime-ink-soft); max-width: var(--measure); }
 #app .Entries { gap: 0; }
 #app .chime-surface.Entry { padding: 1.75rem 0; border-top: 1px solid var(--chime-edge); display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
@@ -78,7 +86,7 @@ html, body { margin: 0; background: #eef1ee; }
 #app .chime-column.Article { width: 100%; max-width: var(--measure); margin-inline: auto; gap: 1.2rem; }
 #app .chime-pressable.BackLink { align-self: flex-start; background: none; border: 0; padding: 0; min-height: 2rem; color: var(--chime-accent); font-weight: 600; }
 #app .chime-pressable.BackLink[aria-disabled="true"] { display: none; }
-#app .chime-surface.ContentNote { padding: 0.9rem 1.1rem; border-left: 3px solid var(--chime-accent-2); background: var(--chime-raised); border-radius: 0 12px 12px 0; display: flex; flex-direction: column; gap: 0.3rem; }
+#app .chime-surface.ContentNote { padding: 0.9rem 1.1rem; border-left: 3px solid #e3a33f; background: var(--t-indigeneity); color: var(--t-ink); border-radius: 0 12px 12px 0; display: flex; flex-direction: column; gap: 0.3rem; }
 #app .NoteWords { font-size: 0.95rem; line-height: 1.5; }
 #app .ArticleTitle, #app .PageTitle { font-size: clamp(2.1rem, 5.5vw, 3.2rem); line-height: 1.08; }
 #app .BylineRow { flex-wrap: wrap; gap: 0.5rem 1rem; }
@@ -103,7 +111,10 @@ html, body { margin: 0; background: #eef1ee; }
 #app .NoteMark { display: inline; font-family: var(--text); font-size: 0.7em; vertical-align: super; line-height: 0; color: var(--chime-accent); padding-left: 0.1em; }
 
 /* the journey: stops along a line, like a crossing */
-#app .Journey, #app .Generations { gap: 0.75rem; padding: 1.25rem; background: var(--chime-raised); border-radius: 12px; margin-block: 0.5rem; }
+#app .Journey, #app .Generations { gap: 0.75rem; padding: 1.25rem; border-radius: 16px; margin-block: 0.5rem; color: var(--t-ink); }
+#app .Journey { background: var(--t-migration); }
+#app .Generations { background: var(--t-animism); }
+#app .Journey .StopWhen, #app .Generations .GenPlace, #app .Generations .GenYears { color: var(--t-ink); opacity: 0.75; }
 #app .Route { position: relative; align-items: flex-start; gap: 1rem; flex-wrap: wrap; padding-top: 1.1rem; }
 #app .Route::before { content: ""; position: absolute; left: 0.35rem; right: 0.35rem; top: 0.35rem; border-top: 1px dashed var(--chime-accent); }
 #app .Stop { position: relative; flex: 1 1 8rem; gap: 0.15rem; }
@@ -166,3 +177,39 @@ html, body { margin: 0; background: #eef1ee; }
 #app .Footer { font-size: 0.85rem; color: var(--chime-ink-soft); white-space: normal; max-width: var(--measure); }
 #app .Preview { gap: 0.5rem; flex-wrap: wrap; }
 #app .chime-pressable.PreviewToggle { min-height: 2rem; padding: 0 0.75rem; font-size: 0.85rem; background: transparent; border-style: dashed; }
+
+/* following her: icons in the header and footer, buttons with handles elsewhere */
+#app .MastRow { align-items: center; flex-wrap: wrap; gap: 0.75rem 1.5rem; }
+#app .Follow { flex-wrap: wrap; gap: 0.5rem; }
+#app .chime-hyperlink.Social { text-decoration: none; color: var(--chime-ink); border-radius: 999px; }
+#app .chime-hyperlink.Social::before { content: ""; flex: none; width: 1.25rem; height: 1.25rem; background: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
+#app .chime-hyperlink.tiktok { --icon: url("images/icons/tiktok.svg"); }
+#app .chime-hyperlink.instagram { --icon: url("images/icons/instagram.svg"); }
+#app .chime-hyperlink.youtube { --icon: url("images/icons/youtube.svg"); }
+#app .Follow.Icons .chime-hyperlink.Social { width: 2.6rem; height: 2.6rem; justify-content: center; background: var(--chime-lit); color: var(--chime-accent); }
+#app .Follow.Icons .chime-hyperlink.Social:hover { background: var(--chime-accent); color: var(--chime-raised); }
+#app .Follow.Icons .SocialName { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#app .Follow.Buttons .chime-hyperlink.Social { padding: 0.55rem 1.1rem 0.55rem 0.9rem; gap: 0.6rem; background: var(--chime-accent); color: var(--chime-raised); }
+#app .Follow.Buttons .chime-hyperlink.Social:hover { filter: brightness(1.08); }
+#app .Follow.Buttons .chime-hyperlink.Social::before { width: 1.4rem; height: 1.4rem; }
+#app .SocialWords { gap: 0; }
+#app .SocialName { font-weight: 700; font-size: 0.95rem; line-height: 1.2; color: inherit; }
+#app .SocialHandle { font-size: 0.8rem; line-height: 1.2; color: inherit; opacity: 0.85; }
+#app .chime-surface.FollowBand { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 2rem; padding: 1.25rem 1.5rem; border-radius: 20px; background: var(--t-trauma); color: var(--t-ink); }
+#app .FollowBand .Kicker { color: var(--t-ink); }
+#app .FollowWords { font-size: 1.05rem; color: var(--t-ink); }
+#app .FooterFollow { gap: 1rem; flex-wrap: wrap; }
+#app .FooterLabel { font-weight: 700; }
+
+/* sharing an article */
+#app .ShareBar { gap: 0.4rem; }
+#app .ShareRow { flex-wrap: wrap; gap: 0.45rem; align-items: center; }
+#app .ShareLabel { font-weight: 700; font-size: 0.95rem; margin-right: 0.25rem; }
+#app .chime-pressable.ShareButton { min-height: 2.25rem; padding: 0 0.95rem; border-radius: 999px; font-size: 0.9rem; font-weight: 600; background: var(--chime-accent); color: var(--chime-raised); border: 0; }
+#app .chime-pressable.ShareButton:hover { filter: brightness(1.08); }
+#app .chime-hyperlink.ShareOut { min-height: 2.25rem; padding: 0 0.85rem; border-radius: 999px; font-size: 0.88rem; font-weight: 600; text-decoration: none; color: var(--chime-ink); background: var(--chime-lit); }
+#app .chime-hyperlink.ShareOut:hover { background: var(--t-trauma); }
+#app .ShareStatus { font-size: 0.85rem; color: var(--chime-accent); font-weight: 600; white-space: normal; }
+#app .chime-surface.EndShare { display: flex; flex-direction: column; gap: 1.25rem; padding: 1.5rem; border-radius: 20px; background: var(--t-post_indenture); color: var(--t-ink); margin-top: 1rem; }
+#app .EndShare .chime-hyperlink.ShareOut { background: var(--chime-raised); color: var(--t-ink); }
+#app .EndFollow { gap: 0.6rem; }

@@ -11,6 +11,11 @@ export class Probe extends Walk {
     this.claim("it opens on the writing", this.top() === "home");
     this.claim("the masthead names the blog", this.shows("Simple Ceremonies"));
     this.claim("every article is listed", listed(this) === ARTICLES.length);
+    const header = this.root().querySelector(".Header");
+    const followed = [...header.querySelectorAll("a.Social")];
+    this.claim("the header links to her TikTok, Instagram and YouTube", ["tiktok.com", "instagram.com", "youtube.com"].every((site) => followed.some((link) => link.href.includes(site))));
+    this.claim("each opens in a new tab and says where it goes", followed.every((link) => link.target === "_blank" && /^Follow on /.test(link.getAttribute("aria-label"))));
+    this.claim("the home screen asks readers to follow along", this.shows("Follow along") && this.root().querySelectorAll('[data-place="home"] .FollowBand a.Social').length === 3);
     this.claim("members' articles are marked", this.root().querySelectorAll('[data-place="home"] .MembersBadge').length === ARTICLES.filter((a) => a.members).length);
 
     await this.pressWords("Animism");
@@ -23,6 +28,17 @@ export class Probe extends Walk {
     await this.press("reads_template_every_block");
     const page = this.root().querySelector('[data-place="article_template_every_block"]');
     this.claim("a title opens its article", this.top() === "article_template_every_block");
+    this.claim("and the address names it, so it can be shared", location.hash === "#template_every_block");
+    const shares = [...page.querySelectorAll(".ShareBar")];
+    this.claim("it can be shared at its top and at its end", shares.length === 2);
+    const whatsapp = shares[0].querySelector('a[href^="https://wa.me/"]');
+    this.claim("a share link carries the article's own address", !!whatsapp && decodeURIComponent(whatsapp.href).includes("#template_every_block"));
+    this.claim("to WhatsApp, Facebook, X, LinkedIn and email", ["wa.me", "facebook.com", "x.com", "linkedin.com", "mailto:"].every((to) => shares[0].querySelector(`a[href*="${to}"]`)));
+    await this.press("copies_the_link");
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await this.frames(3);
+    this.claim("copying the link says what came of it", this.shows("Link copied") || this.showsPart("Couldn't copy the link"));
+    this.claim("the end of an article asks readers to follow her", this.shows("Follow Author Name") && page.querySelectorAll(".EndShare a.Social").length === 3);
     this.claim("a content note comes first", this.shows("Content note") && this.showsPart("Content note placeholder"));
     this.claim("an epigraph, with its source", this.showsPart("Epigraph placeholder") && this.showsPart("— Source of the epigraph"));
     this.claim("a journey, its stops in order", this.shows("Place of departure") && this.shows("Place of arrival"));
@@ -62,7 +78,15 @@ export class Probe extends Walk {
     await this.press("reads_template_members_one");
     this.claim("as a member, the whole article shows", this.shows("Subheading placeholder") && !this.shows("This piece is for members"));
 
+    location.hash = "#template_place";
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await this.frames(3);
+    this.claim("an article's address opens it", this.top() === "article_template_place");
+    await this.press("goes_home");
+    this.claim("and leaving it gives the page its own address back", location.hash === "");
+
     await this.press("goes_about");
+    this.claim("About asks readers to follow her", this.root().querySelectorAll('[data-place="about"] a.Social').length === 3);
     this.claim("About has her portrait and disciplines", this.top() === "about" && this.shows("Psychology") && this.shows("Anthropology") && this.shows("Sociology") && !!this.root().querySelector('[data-place="about"] img.Portrait'));
     this.finish();
   }

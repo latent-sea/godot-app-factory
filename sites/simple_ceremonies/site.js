@@ -8,8 +8,14 @@
 // not connected (a placeholder, said so on the page). The footer's template
 // preview shows the members' view, so every article can be seen as a member
 // would see it.
+//
+// Every article has its own address - the page's, with #its-slug - so it
+// can be shared and opened straight from a link. Her TikTok, Instagram and
+// YouTube are in the header, on the home screen, on About, at the end of
+// every article and in the footer; every article can be shared by the
+// phone's share sheet, a copied link, or a link to post it elsewhere.
 
-import { ChimeApp, Controller, Driver, Look, Phrase, Ui } from "./gd_chime/gd_chime.js";
+import { ChimeApp, Chimes, Controller, Driver, Look, Phrase, Ui } from "./gd_chime/gd_chime.js";
 import { ARTICLES, GLOSSARY, SITE, THREADS, THREAD_INTROS, minutesToRead, threadNamed, written } from "./content.js";
 
 const HOME = "home";
@@ -28,17 +34,21 @@ const SETS_NAME = "sets_the_name";
 const SETS_EMAIL = "sets_the_email";
 const CHOOSES_PLAN = "chooses_a_plan";
 const CONTINUES = "continues_to_payment";
+const SHARES = "shares_with_the_share_sheet";
+const COPIES_LINK = "copies_the_link";
 
 const PLANS = [
   { id: "monthly", name: "Monthly", price: "Price placeholder, a month" },
   { id: "yearly", name: "Yearly", price: "Price placeholder, a year" },
 ];
 
-/** The look by day and by night: sea and river, soil, and paper. */
-const LIGHT = { ground: "#eef1ee", raised: "#f8faf8", lit: "#e1e8e4", ink: "#1d2624", ink_soft: "#56645f", accent: "#24555e", accent_2: "#87663a", warn: "#9a3b2b", edge: "#cbd5d0" };
-const DARK = { ground: "#101819", raised: "#162123", lit: "#1f2e31", ink: "#e3eae7", ink_soft: "#97a8a3", accent: "#8cc3c9", accent_2: "#d3ae78", warn: "#e58c78", edge: "#2a3b3d" };
+/** The look by day and by night: warm Indian pastels - blush, rani pink, marigold - with ink dark enough to read on all of them. */
+const LIGHT = { ground: "#fcf3ec", raised: "#fffaf6", lit: "#f7e6db", ink: "#2e2226", ink_soft: "#6a565b", accent: "#b83f72", accent_2: "#985612", warn: "#a83a2c", edge: "#efd9cc" };
+const DARK = { ground: "#1f1619", raised: "#2a1f23", lit: "#36292e", ink: "#f7ece7", ink_soft: "#c9b6b1", accent: "#f093b8", accent_2: "#f2b96a", warn: "#f0907c", edge: "#463539" };
 
 const screenOf = (article) => `article_${article.slug}`;
+/** Where an article lives, to be shared: this page's address with the article's slug after #. */
+const addressOf = (article) => (typeof location === "undefined" ? `#${article.slug}` : `${location.origin}${location.pathname}#${article.slug}`);
 const readsOf = (article) => `reads_${article.slug}`;
 
 /** Whether the reader is a member. Joining is not connected, so only the template preview changes it. */
@@ -76,6 +86,45 @@ class Signup extends Controller {
   }
 }
 
+/** Text copied by selecting it in a hidden field: what browsers without a clipboard to ask still do. */
+function copyTheOldWay(text) {
+  const field = document.createElement("textarea");
+  field.value = text;
+  field.setAttribute("readonly", "");
+  field.style.cssText = "position:fixed;opacity:0;pointer-events:none";
+  document.body.appendChild(field);
+  field.select();
+  let worked = false;
+  try { worked = document.execCommand("copy"); } catch { worked = false; }
+  field.remove();
+  return worked;
+}
+
+/** Sharing an article: the phone's share sheet, and copying its link, with what came of the last copy. */
+class Sharing extends Controller {
+  constructor(chimes) { super(chimes); this.copied = this.value(null); }
+
+  answers() { return [SHARES, COPIES_LINK]; }
+
+  would(action) {
+    if (action === SHARES && (typeof navigator === "undefined" || typeof navigator.share !== "function")) return Phrase.of("This browser has no share sheet");
+    return null;
+  }
+
+  told(action, payload) {
+    if (action === SHARES) {
+      navigator.share({ title: payload.title, url: payload.url }).catch(() => {});
+    } else if (action === COPIES_LINK) {
+      const done = (worked) => this.copied.setValue({ slug: payload.slug, worked });
+      // the clipboard, given a second to answer - some browsers never do - else the older way of copying
+      const asked = navigator.clipboard ? navigator.clipboard.writeText(payload.url) : Promise.reject(new Error("no clipboard"));
+      const late = new Promise((_, refuse) => setTimeout(() => refuse(new Error("no answer")), 1000));
+      Promise.race([asked, late]).then(() => done(true), () => done(copyTheOldWay(payload.url)));
+    }
+    return null;
+  }
+}
+
 export class SimpleCeremonies extends ChimeApp {
   look() {
     const dark = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches;
@@ -95,6 +144,8 @@ export class SimpleCeremonies extends ChimeApp {
       [SETS_EMAIL]: ["Email"],
       [CHOOSES_PLAN]: ["Choose a plan"],
       [CONTINUES]: ["Continue to payment"],
+      [SHARES]: ["Share…"],
+      [COPIES_LINK]: ["Copy link"],
     };
     for (const article of ARTICLES) table[readsOf(article)] = ["Read"];
     register.declareAll(table);
@@ -104,6 +155,7 @@ export class SimpleCeremonies extends ChimeApp {
     const ui = this.ui;
     this.membership = this.model(new Membership(this.chimes));
     this.signup = this.model(new Signup(this.chimes));
+    this.sharing = this.model(new Sharing(this.chimes));
     this.meaning = ui.popUp("meaning", (which) => ui.column([
       ui.text(Phrase.of("Glossary"), "Kicker"),
       ui.text(which, "TermWord"),
@@ -112,7 +164,10 @@ export class SimpleCeremonies extends ChimeApp {
     ], "Meaning"));
 
     const header = ui.column([
-      ui.link(GOES_HOME, null, SITE.name, { style: "Masthead", words_style: "MastheadWords" }).goesTo(HOME),
+      ui.row([
+        ui.link(GOES_HOME, null, SITE.name, { style: "Masthead", words_style: "MastheadWords" }).goesTo(HOME).grow(),
+        this.follow("Icons"),
+      ], "MastRow"),
       ui.row([
         ui.text(SITE.disciplines.join(" · "), "Disciplines").grow(),
         this.navLink(GOES_HOME, HOME),
@@ -124,6 +179,7 @@ export class SimpleCeremonies extends ChimeApp {
 
     const footer = ui.column([
       ui.divider("Horizon"),
+      ui.row([ui.text(Phrase.of("Follow her"), "FooterLabel"), this.follow("Icons")], "FooterFollow"),
       ui.text(Phrase.of("Land acknowledgement placeholder: her words, if she chooses to include one."), "Footer").wraps(),
       ui.text(Phrase.with("© %s %s", [new Date().getFullYear(), SITE.author]), "Footer"),
       ui.row([
@@ -139,14 +195,74 @@ export class SimpleCeremonies extends ChimeApp {
   // loaded only when the page is walked (?probe), so an export leaves it out
   probe() { return import("./probe.js").then((made) => new made.Probe(this)); }
 
+  /** The app mounted, then its address kept: an article opened from a link, and the address following the reader. */
+  mount(element) {
+    super.mount(element);
+    this.started.then((stood) => { if (stood) this.keepAddress(); });
+    return this;
+  }
+
+  keepAddress() {
+    const open = () => {
+      const article = ARTICLES.find((each) => `#${each.slug}` === location.hash);
+      if (article && !this.driver.isActive(screenOf(article))) this.commands.dispatch(Chimes.GLOBAL, Driver.GO, { place: screenOf(article) });
+    };
+    open();
+    addEventListener("hashchange", open);
+    // the address follows the reader: an article's own while it is open, the page's otherwise
+    this.chimes.follow({ region: Chimes.GLOBAL }, "address", () => {
+      const top = this.driver.getTop();
+      const article = ARTICLES.find((each) => screenOf(each) === top[top.length - 1]);
+      const wanted = article ? `#${article.slug}` : "";
+      if (location.hash !== wanted) history.replaceState(null, "", wanted || `${location.pathname}${location.search}`);
+    });
+  }
+
   // --- pieces ---
+
+  /** Her TikTok, Instagram and YouTube: as icons, or as buttons with their handles. */
+  follow(style) {
+    const ui = this.ui;
+    return ui.row(SITE.socials.map((social) => ui.hyperlink(social.url, style === "Icons"
+      ? [ui.text(social.name, "SocialName")]
+      : [ui.column([ui.text(social.name, "SocialName"), ui.text(social.handle, "SocialHandle")], "SocialWords")],
+    `Social ${social.id}`, { label: Phrase.with("Follow on %s", [social.name]) })), `Follow ${style}`);
+  }
+
+  /** Every way to share an article: the share sheet, a copied link, and links to post it elsewhere. */
+  shareBar(article) {
+    const ui = this.ui;
+    const url = addressOf(article);
+    const said = encodeURIComponent(url);
+    const titled = encodeURIComponent(article.title);
+    const out = [
+      ["WhatsApp", `https://wa.me/?text=${titled}%20${said}`],
+      ["Facebook", `https://www.facebook.com/sharer/sharer.php?u=${said}`],
+      ["X", `https://x.com/intent/post?url=${said}&text=${titled}`],
+      ["LinkedIn", `https://www.linkedin.com/sharing/share-offsite/?url=${said}`],
+      ["Email", `mailto:?subject=${titled}&body=${said}`],
+    ];
+    const status = this.sharing.copied.map((copied) => (copied?.slug === article.slug
+      ? Phrase.of(copied.worked ? "Link copied" : "Couldn't copy the link. Copy it from the address bar instead.") : null));
+    return ui.column([
+      ui.row([
+        ui.text(Phrase.of("Share this piece"), "ShareLabel"),
+        ui.pressable(SHARES, { title: article.title, url }, [ui.text(ui.words(SHARES))], "ShareButton").absentWhenRefused(),
+        ui.pressable(COPIES_LINK, { slug: article.slug, url }, [ui.text(ui.words(COPIES_LINK))], "ShareButton"),
+        ...out.map(([name, href]) => ui.hyperlink(href, [ui.text(name)], "ShareOut", { label: Phrase.with("Share on %s", [name]), stays: href.startsWith("mailto:") })),
+      ], "ShareRow"),
+      ui.text(status, "ShareStatus").hidesEmpty(),
+    ], "ShareBar");
+  }
+
+  threadTag(id) { return this.ui.text(threadNamed(id).name, `ThreadTag t-${id}`); }
 
   navLink(action, place) {
     return this.ui.pressable(action, { parameter: null }, [this.ui.text(this.ui.words(action), "NavWords")], "NavLink").goesTo(place);
   }
 
   threadTags(article) {
-    return this.ui.row(article.threads.map((id) => this.ui.text(threadNamed(id).name, "ThreadTag")), "ThreadTags");
+    return this.ui.row(article.threads.map((id) => this.threadTag(id)), "ThreadTags");
   }
 
   meta(article) {
@@ -173,12 +289,16 @@ export class SimpleCeremonies extends ChimeApp {
   home() {
     const ui = this.ui;
     const showing = ui.local(ALL);
-    const chip = (value, words) => ui.pressLocal(showing, value, [ui.text(words)], "Chip");
+    const chip = (value, words) => ui.pressLocal(showing, value, [ui.text(words)], `Chip t-${value}`);
     return ui.screen(HOME, [
       ui.column([
         ui.text(SITE.about, "Intro").wraps(),
         ui.paragraph([Phrase.with("Writing by %s. ", [SITE.author]), ui.link(GOES_ABOUT, null, Phrase.of("More about her work"), { style: "InlineLink", words_style: "InlineWords" }).goesTo(ABOUT)], "IntroSmall"),
       ], "IntroBlock"),
+      ui.surface("FollowBand", [
+        ui.column([ui.text(Phrase.of("Follow along"), "Kicker"), ui.text(Phrase.with("Find %s on TikTok, Instagram and YouTube.", [SITE.author]), "FollowWords").wraps()], "FollowText"),
+        this.follow("Buttons"),
+      ]),
       ui.column([
         ui.text(Phrase.of("Threads"), "Kicker"),
         ui.row([chip(ALL, Phrase.of("All writing")), ...THREADS.map((thread) => chip(thread.id, thread.name))], "Chips"),
@@ -197,13 +317,15 @@ export class SimpleCeremonies extends ChimeApp {
         ui.column([
           ui.text(Phrase.of("About"), "Kicker"),
           ui.text(SITE.author, "PageTitle").wraps(),
-          ui.row(SITE.disciplines.map((discipline) => ui.text(discipline, "ThreadTag")), "ThreadTags"),
+          ui.row(SITE.disciplines.map((discipline) => ui.text(discipline, "ThreadTag Discipline")), "ThreadTags"),
           ui.text(Phrase.of("A short introduction in her words: who she is, where she writes from, and why. Lorem ipsum dolor sit amet."), "Dek").wraps(),
           ui.text(lorem, "Body").wraps(),
           ui.text(Phrase.of("How she works"), "Subhead"),
           ui.text(lorem, "Body").wraps(),
           ui.text(Phrase.of("What she writes about"), "Subhead"),
-          ui.row(THREADS.map((thread) => ui.text(thread.name, "ThreadTag")), "ThreadTags"),
+          ui.row(THREADS.map((thread) => this.threadTag(thread.id)), "ThreadTags"),
+          ui.text(Phrase.of("Follow her"), "Subhead"),
+          this.follow("Buttons"),
           ui.text(Phrase.of("Get in touch"), "Subhead"),
           ui.text(Phrase.of("Contact placeholder: an email address, or a note on how to reach her."), "Body").wraps(),
           ui.button(GOES_JOIN, { goes_to: JOIN, style: "JoinButton" }),
@@ -300,7 +422,11 @@ export class SimpleCeremonies extends ChimeApp {
     const opening = (cut < 0 ? article.body : article.body.slice(0, cut)).map((block) => this.block(block));
     const rest = cut < 0 ? [] : article.body.slice(cut + 1).map((block) => this.block(block));
     const next = [1, 2].map((step) => ARTICLES[(at + step) % ARTICLES.length]);
-    const keepReading = [ui.divider("Horizon"), ui.text(Phrase.of("Keep reading"), "Kicker"), ui.column(next.map((other) => this.entry(other, false)), "Entries")];
+    const ending = ui.surface("EndShare", [
+      this.shareBar(article),
+      ui.column([ui.text(Phrase.with("Follow %s", [SITE.author]), "ShareLabel"), this.follow("Buttons")], "EndFollow"),
+    ]);
+    const keepReading = [ending, ui.divider("Horizon"), ui.text(Phrase.of("Keep reading"), "Kicker"), ui.column(next.map((other) => this.entry(other, false)), "Entries")];
     const after = [...rest, ...this.endMatter(article)];
     const paywall = ui.surface("Paywall", [
       ui.text(Phrase.of("This piece is for members"), "PaywallTitle"),
@@ -315,6 +441,7 @@ export class SimpleCeremonies extends ChimeApp {
         ui.text(article.title, "ArticleTitle").wraps(),
         ui.text(article.dek, "Dek").wraps(),
         ui.row([ui.text(Phrase.with("By %s", [SITE.author]), "Byline"), this.meta(article)], "BylineRow"),
+        this.shareBar(article),
         article.epigraph ? ui.column([ui.text(article.epigraph[0], "EpigraphWords").wraps(), ui.text(Phrase.with("— %s", [article.epigraph[1]]), "EpigraphSource")], "Epigraph") : null,
         this.figure(ui.image(article.hero[0], "HeroImage", article.hero[1]), article.hero[2]),
         ...opening,

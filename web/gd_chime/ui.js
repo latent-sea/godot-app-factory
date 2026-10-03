@@ -98,6 +98,18 @@ export class Ui {
     return this.pressable(action, parameter, [this.text(words, options.words_style ?? Themes.PARAGRAPH)], options.style ?? "Link");
   }
 
+  /**
+   * A link to another page or site: its address (or a bound value reading
+   * one) and what it shows. It opens in a new tab unless it stays (an
+   * address on this page, a mail link). Its options: label, what it is
+   * called to a reader who cannot see it (its words are, when it has none);
+   * stays, to open where it is.
+   */
+  hyperlink(href, content, style = "", options = {}) {
+    checked("a hyperlink", options, ["label", "stays"]);
+    return new Desc("hyperlink", { href, style, label: options.label ?? null, stays: !!options.stays }, content);
+  }
+
   /** A line between parts, in a style of the look's if given. */
   divider(style = "") { return new Desc("divider", { style }); }
 
@@ -385,8 +397,7 @@ const BUILDERS = {
       shown.src = src;
       shown.title = said();
       shown.loading = "lazy";
-      shown.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen";
-      shown.allowFullscreen = true;
+      shown.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
       shown.referrerPolicy = "strict-origin-when-cross-origin";
       return shown;
     };
@@ -422,6 +433,20 @@ const BUILDERS = {
       const words = el(made, "span", "chime-span");
       ui.draws(words, () => { words.textContent = Language.said(Bound.is(span) ? span.read() : span); });
     }
+    return made;
+  },
+
+  hyperlink(ui, desc, parent) {
+    const { href, style, label, stays } = desc.props;
+    const made = el(parent, "a", `chime-hyperlink ${styleOf(style)}`);
+    const address = () => String((Bound.is(href) ? href.read() : href) ?? "");
+    ui.draws(made, () => {
+      made.href = address();
+      const leaves = !stays && /^https?:/.test(made.getAttribute("href")) && !made.getAttribute("href").startsWith("#");
+      if (leaves) { made.target = "_blank"; made.rel = "noopener noreferrer"; } else { made.removeAttribute("target"); made.removeAttribute("rel"); }
+      if (label) made.setAttribute("aria-label", Language.said(label)); else made.removeAttribute("aria-label");
+    });
+    ui.buildInto(desc.children, made);
     return made;
   },
 

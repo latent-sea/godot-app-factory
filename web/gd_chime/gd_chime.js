@@ -13,7 +13,7 @@
 // - The application: ChimeApp, which a site extends, answering look(),
 //   sources(), declare(), describe() and probe().
 // - The vocabulary: the builder (app.ui) - text, image, embed, surface, paragraph,
-//   link, divider, pressable, pressLocal, reason, button, field, area, row,
+//   link, hyperlink, divider, pressable, pressLocal, reason, button, field, area, row,
 //   column, grid, stack, scroll, each, eachAcross, when, local, bound,
 //   parameter, and the places: app, screen, tabs, popUp; Desc, a
 //   description; Bound, a value a description reads.

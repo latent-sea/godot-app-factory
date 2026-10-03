@@ -93,6 +93,8 @@ export class Stall extends ChimeApp {
       ui.text(ui.parameter(CRATE).map((name) => Phrase.with("The crate called %s", [name ?? ""])), Themes.WORDS),
       ui.image(POSTER, "", Phrase.of("A wooden crate")),
       ui.embed("embedded.html", { title: Phrase.of("A crate in motion"), poster: POSTER }),
+      ui.hyperlink("https://example.org/crates", [ui.text(Phrase.of("More about crates"))], "Away", { label: Phrase.of("More about crates, on another site") }),
+      ui.hyperlink("embedded.html", [ui.text(Phrase.of("The crate's page"))], "", { stays: true }),
       ui.button(BACKS, { goes_to: Driver.BACK }),
     ]);
     return ui.app("stall", [ui.stack([counting, crate])]);

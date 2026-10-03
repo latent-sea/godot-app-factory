@@ -21,6 +21,12 @@ export const SITE = {
   author: "Author Name",
   disciplines: ["Psychology", "Anthropology", "Sociology"],
   about: "Writing on migration, place, ancestry and repair.",
+  // Where to follow her: replace each handle and address with hers.
+  socials: [
+    { id: "tiktok", name: "TikTok", handle: "@handle", url: "https://www.tiktok.com/" },
+    { id: "instagram", name: "Instagram", handle: "@handle", url: "https://www.instagram.com/" },
+    { id: "youtube", name: "YouTube", handle: "@handle", url: "https://www.youtube.com/" },
+  ],
 };
 
 export const THREADS = [

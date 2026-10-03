@@ -72,6 +72,7 @@ const SHEET_ID = "gd-chime-look";
 export const SHEET = `
 .chime-look { background: var(--chime-ground); color: var(--chime-ink); font: var(--chime-size-face)/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; box-sizing: border-box; min-height: 100%; }
 .chime-look *, .chime-look *::before, .chime-look *::after { box-sizing: inherit; }
+.chime-look [hidden] { display: none !important; }
 .chime-app { position: relative; min-height: 100%; display: flex; flex-direction: column; width: 100%; max-width: 64rem; margin: 0 auto; padding: var(--chime-size-pad); gap: var(--chime-size-gap); }
 .chime-screen, .chime-tabs { gap: var(--chime-size-gap); }
 .chime-layer { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
@@ -135,6 +136,9 @@ export const SHEET = `
 .chime-shade.chime-blocks-nothing { background: none; pointer-events: none; place-items: end center; }
 .chime-shade.chime-blocks-nothing > * { pointer-events: auto; }
 .chime-sheet { background: var(--chime-raised); border: 1px solid var(--chime-edge); border-radius: var(--chime-size-radius); padding: var(--chime-size-pad); max-width: min(100%, 36rem); max-height: 100%; overflow: auto; }
+.chime-hyperlink { color: var(--chime-accent); display: inline-flex; align-items: center; gap: 0.4em; }
+.chime-hyperlink:focus-visible { outline: 2px solid var(--chime-accent); outline-offset: 2px; }
+.chime-hyperlink .chime-text { overflow: visible; }
 .chime-grow { flex-grow: 1; min-width: 0; }
 .chime-each { display: contents; }
 `;
