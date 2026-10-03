@@ -1,6 +1,6 @@
-/* Simple Ceremonies' own look, over gd-chime's: one friendly sans, warm
-   Indian pastels from the look's palette (site.js, as --chime-*) and a soft
-   pastel for each thread below, and one
+/* Simple Ceremonies' own look, over gd-chime's: one friendly sans, henna
+   and brass on unbleached cotton from the look's palette (site.js, as
+   --chime-*), a muted earth tone for each thread below, and one
    recurring mark - a horizon line with a small sun on it, for the crossings
    the writing returns to. Scoped to #app so it comes before the framework. */
 
@@ -8,12 +8,12 @@
 @font-face { font-family: "Nunito Sans"; src: url("fonts/NunitoSans-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
 
 :root { --display: "Nunito Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif; --text: var(--display); --measure: 40rem; }
-html, body { margin: 0; background: #fcf3ec; }
-@media (prefers-color-scheme: dark) { html, body { background: #1f1619; } }
+html, body { margin: 0; background: #f3ede4; }
+@media (prefers-color-scheme: dark) { html, body { background: #1c1614; } }
 
-/* a pastel for each thread, by day and after dark; ink stays dark on them all */
-#app { --t-migration: #dcebf8; --t-place: #d9f0e3; --t-trauma: #fbe0ea; --t-post_indenture: #fde3d0; --t-animism: #ebe1f6; --t-indigeneity: #fcefc7; --t-all: #f3e3dc; --t-ink: #2e2226; }
-@media (prefers-color-scheme: dark) { #app { --t-migration: #2c3a48; --t-place: #2a3f35; --t-trauma: #4a2a37; --t-post_indenture: #4a3326; --t-animism: #3b3049; --t-indigeneity: #4a4026; --t-all: #3a2d2c; --t-ink: #f7ece7; } }
+/* a muted earth tone for each thread - stone, sage, clay, sand, lichen, ochre - by day and after dark */
+#app { --t-migration: #e2e4e3; --t-place: #e1e4d3; --t-trauma: #ecdcd2; --t-post_indenture: #eee0c7; --t-animism: #e3ded2; --t-indigeneity: #eadcc3; --t-all: #e7ddcf; --t-ink: #2a201e; --sun: #b48a2c; }
+@media (prefers-color-scheme: dark) { #app { --t-migration: #2b2d2e; --t-place: #2c3026; --t-trauma: #3a2a25; --t-post_indenture: #3a3122; --t-animism: #302c26; --t-indigeneity: #3a3020; --t-all: #332a24; --t-ink: #f1e8df; --sun: #d6ad5c; } }
 #app .t-migration { --tint: var(--t-migration); } #app .t-place { --tint: var(--t-place); } #app .t-trauma { --tint: var(--t-trauma); }
 #app .t-post_indenture { --tint: var(--t-post_indenture); } #app .t-animism { --tint: var(--t-animism); } #app .t-indigeneity { --tint: var(--t-indigeneity); } #app .t-all { --tint: var(--t-all); }
 #app { min-height: 100vh; }
@@ -24,7 +24,7 @@ html, body { margin: 0; background: #fcf3ec; }
 
 /* the horizon: a line, and a small sun resting on it */
 #app .chime-divider.Horizon { position: relative; height: 1px; border: 0; background: var(--chime-edge); overflow: visible; margin: 0; }
-#app .chime-divider.Horizon::after { content: ""; position: absolute; left: 72%; top: -0.45rem; width: 0.9rem; height: 0.9rem; border-radius: 50%; background: #f2b04f; box-shadow: 0 0 0 4px var(--chime-ground); }
+#app .chime-divider.Horizon::after { content: ""; position: absolute; left: 72%; top: -0.45rem; width: 0.9rem; height: 0.9rem; border-radius: 50%; background: var(--sun); box-shadow: 0 0 0 4px var(--chime-ground); }
 
 /* the header */
 #app .Header { gap: 0.9rem; padding-top: 2rem; }
@@ -86,7 +86,7 @@ html, body { margin: 0; background: #fcf3ec; }
 #app .chime-column.Article { width: 100%; max-width: var(--measure); margin-inline: auto; gap: 1.2rem; }
 #app .chime-pressable.BackLink { align-self: flex-start; background: none; border: 0; padding: 0; min-height: 2rem; color: var(--chime-accent); font-weight: 600; }
 #app .chime-pressable.BackLink[aria-disabled="true"] { display: none; }
-#app .chime-surface.ContentNote { padding: 0.9rem 1.1rem; border-left: 3px solid #e3a33f; background: var(--t-indigeneity); color: var(--t-ink); border-radius: 0 12px 12px 0; display: flex; flex-direction: column; gap: 0.3rem; }
+#app .chime-surface.ContentNote { padding: 0.9rem 1.1rem; border-left: 3px solid var(--sun); background: var(--t-indigeneity); color: var(--t-ink); border-radius: 0 12px 12px 0; display: flex; flex-direction: column; gap: 0.3rem; }
 #app .NoteWords { font-size: 0.95rem; line-height: 1.5; }
 #app .ArticleTitle, #app .PageTitle { font-size: clamp(2.1rem, 5.5vw, 3.2rem); line-height: 1.08; }
 #app .BylineRow { flex-wrap: wrap; gap: 0.5rem 1rem; }

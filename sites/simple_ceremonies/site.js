@@ -42,9 +42,9 @@ const PLANS = [
   { id: "yearly", name: "Yearly", price: "Price placeholder, a year" },
 ];
 
-/** The look by day and by night: warm Indian pastels - blush, rani pink, marigold - with ink dark enough to read on all of them. */
-const LIGHT = { ground: "#fcf3ec", raised: "#fffaf6", lit: "#f7e6db", ink: "#2e2226", ink_soft: "#6a565b", accent: "#b83f72", accent_2: "#985612", warn: "#a83a2c", edge: "#efd9cc" };
-const DARK = { ground: "#1f1619", raised: "#2a1f23", lit: "#36292e", ink: "#f7ece7", ink_soft: "#c9b6b1", accent: "#f093b8", accent_2: "#f2b96a", warn: "#f0907c", edge: "#463539" };
+/** The look by day and by night: henna and brass on unbleached cotton - warm, earthy and grown-up - with ink dark enough to read on every ground. */
+const LIGHT = { ground: "#f3ede4", raised: "#fbf7f1", lit: "#e9e0d3", ink: "#2a201e", ink_soft: "#63554f", accent: "#6e2b22", accent_2: "#7f5c17", warn: "#9a3b2b", edge: "#dfd2c2" };
+const DARK = { ground: "#1c1614", raised: "#261d1a", lit: "#312623", ink: "#f1e8df", ink_soft: "#c2b3a7", accent: "#dc937c", accent_2: "#d6ad5c", warn: "#e08a74", edge: "#3d302b" };
 
 const screenOf = (article) => `article_${article.slug}`;
 /** Where an article lives, to be shared: this page's address with the article's slug after #. */
