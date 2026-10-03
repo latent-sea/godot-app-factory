@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Image placeholder">
-<rect width="1200" height="800" fill="#e9e0d2"/>
-<rect y="496" width="1200" height="304" fill="#d9cab4"/>
-<line x1="0" y1="496" x2="1200" y2="496" stroke="#8a6a48" stroke-width="4"/>
-<circle cx="840" cy="496" r="40" fill="#e9e0d2" stroke="#8a6a48" stroke-width="4"/>
-<text x="72" y="112" font-family="system-ui, sans-serif" font-size="44" fill="#4a3f34" letter-spacing="2">IMAGE PLACEHOLDER</text>
-</svg>
