@@ -3,7 +3,7 @@
    COLOUR: one family. A clay-madder brand colour (--brand) and its deep
    step (--brand-deep, --night), warm neutrals tinted from the same hue
    (paper, surface, line, muted, ink), a quiet clay tint for the rare panel
-   that asks for attention, and ochre for the small sun alone. Roughly:
+   that asks for attention, and ochre for the members mark alone. Roughly:
    paper 60, ink and surface 30, brand 10. Values come from the look's
    palette (site.js) as --chime-*; the few extra steps are below.
 
@@ -13,8 +13,8 @@
    SPACE: 4px steps - 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6rem.
 
    COMPONENTS: two buttons (primary: brand fill; secondary: a line), one
-   surface, one radius (6px), text labels instead of pills, and one mark -
-   a horizon line with a small ochre sun. Scoped to #app so it comes after
+   surface, one radius (6px), text labels instead of pills, and plain hairline rules.
+   Scoped to #app so it comes after
    the framework's own sheet. */
 
 @font-face { font-family: "Nunito Sans"; src: url("fonts/NunitoSans-normal.woff2") format("woff2"); font-weight: 400 800; font-style: normal; font-display: swap; }
@@ -25,12 +25,12 @@ html, body { margin: 0; background: #fbf5ef; }
 @media (prefers-color-scheme: dark) { html, body { background: #15110d; } }
 #app {
   --font: "Nunito Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif;
-  --tint: #f8ebe3; --night: #371910; --night-ink: #fbf5ef; --sun: #d2a249;
+  --tint: #f8ebe3; --night: #371910; --night-ink: #fbf5ef; --mark: #d2a249;
   --radius: 6px; --measure: 40rem; --wide: 70rem;
   --step--1: 0.8rem; --step-0: 1rem; --body: 1.125rem; --step-1: 1.25rem; --step-2: 1.56rem; --step-3: 1.95rem; --step-4: 2.44rem; --step-5: 3.05rem;
   min-height: 100vh;
 }
-@media (prefers-color-scheme: dark) { #app { --tint: #291d17; --night: #0d0806; --night-ink: #f1eae3; --sun: #dcaf61; } }
+@media (prefers-color-scheme: dark) { #app { --tint: #291d17; --night: #0d0806; --night-ink: #f1eae3; --mark: #dcaf61; } }
 
 /* ---- the page ---- */
 #app.chime-look { font-family: var(--font); font-size: var(--step-0); color: var(--chime-ink); }
@@ -39,10 +39,8 @@ html, body { margin: 0; background: #fbf5ef; }
 #app .chime-screen { gap: 3rem; }
 #app .chime-text { overflow: visible; white-space: normal; }
 
-/* ---- the mark: a horizon, and a small sun on it ---- */
+/* ---- rules: a plain hairline ---- */
 #app .chime-divider { border: 0; height: 1px; background: var(--chime-edge); margin: 0; }
-#app .chime-divider.Horizon { position: relative; overflow: visible; }
-#app .chime-divider.Horizon::after { content: ""; position: absolute; left: 72%; top: -0.35rem; width: 0.7rem; height: 0.7rem; border-radius: 50%; background: var(--sun); box-shadow: 0 0 0 0.35rem var(--chime-ground); }
 
 /* ---- type ---- */
 #app .MastheadWords { font-size: var(--step-3); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; color: var(--chime-ink); }
@@ -124,13 +122,13 @@ html, body { margin: 0; background: #fbf5ef; }
 #app .Threads { gap: 0.75rem; }
 #app .Chips { flex-wrap: wrap; gap: 0.5rem; }
 #app .chime-pressable.Chip { min-height: 2.25rem; padding: 0.25rem 0.85rem; font-size: 0.92rem; }
-#app .chime-pressable.Chip.chime-current { background: var(--chime-ink); border-color: var(--chime-ink); color: var(--chime-ground); }
+#app .chime-pressable.Chip.chime-current { background: var(--chime-ink); border-color: var(--chime-ink); color: var(--chime-ground); cursor: default; }
 #app .ThreadIntro { font-size: var(--step-1); color: var(--chime-ink-soft); max-width: var(--measure); }
 #app .ThreadTags { flex-wrap: wrap; gap: 0 0.75rem; }
 #app .ThreadTag { font-size: var(--step--1); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--chime-accent); }
 #app .MetaRow { gap: 0.75rem; flex-wrap: wrap; align-items: baseline; }
 #app .MembersBadge { font-size: var(--step--1); font-weight: 700; color: var(--chime-ink); }
-#app .MembersBadge::before { content: "● "; color: var(--sun); }
+#app .MembersBadge::before { content: "● "; color: var(--mark); }
 #app .Entries { gap: 0; }
 #app .chime-surface.Entry { display: grid; grid-template-columns: minmax(0, 12rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; padding: 2rem 0; border-top: 1px solid var(--chime-edge); border-radius: 0; background: none; }
 #app .chime-surface.Entry.LeadEntry { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 2.5rem; align-items: center; border-top: 0; padding-top: 0; }
@@ -220,7 +218,7 @@ html, body { margin: 0; background: #fbf5ef; }
 
 /* ---- the footer: the page's one deep band ---- */
 #app .FooterBlock { gap: 1rem; padding-block: 2.5rem 3rem; background: var(--night); color: var(--night-ink); box-shadow: 0 0 0 100vmax var(--night); clip-path: inset(0 -100vmax); }
-#app .FooterBlock .chime-divider.Horizon { display: none; }
+#app .FooterBlock .chime-divider.Rule { display: none; }
 #app .FooterBlock .Footer, #app .FooterBlock .FooterLabel { color: var(--night-ink); opacity: 0.8; }
 #app .FooterFollow { gap: 1rem; align-items: center; flex-wrap: wrap; }
 #app .FooterBlock .Follow.Icons .chime-hyperlink.Social { color: var(--night-ink); }
