@@ -8,8 +8,9 @@
 # - Applies only what changed under platform/: the SQL, the functions, the
 #   compose changes, the Caddyfile, and these scripts and timers themselves.
 # - Then checks the platform answers. If it doesn't, it goes back to the
-#   commit it was on, applies that again, and refuses the new commit until a
-#   newer one comes.
+#   commit it was on and applies that again. It tries the new commit again
+#   after six hours (the cause may have been the machine, not the commit),
+#   or as soon as a newer one comes.
 # - The outcome is in $PLATFORM_DIR/status/status.json, which Caddy serves at
 #   https://api.<domain>/platform/status (commits and times only, nothing
 #   secret), and in `journalctl -u platform-deploy`.
@@ -24,7 +25,8 @@ UNIT_DIR=${UNIT_DIR:-/etc/systemd/system}
 REPO="$PLATFORM_DIR/factory"
 FACTORY="$REPO/platform"
 STATUS="$PLATFORM_DIR/status/status.json"
-REFUSED="$PLATFORM_DIR/deploy-refused"
+REFUSED="$PLATFORM_DIR/deploy-refused"  # a failed check: never taken
+UNWELL="$PLATFORM_DIR/deploy-unwell"    # left the platform unwell: tried again after six hours
 
 # one at a time
 exec 9>"${LOCK:-/run/platform-deploy.lock}"
@@ -46,6 +48,7 @@ new=$(git rev-parse FETCH_HEAD)
 cur=$(git rev-parse HEAD)
 [ "$new" = "$cur" ] && exit 0
 [ "$new" = "$(cat "$REFUSED" 2>/dev/null)" ] && exit 0
+if [ "$new" = "$(cat "$UNWELL" 2>/dev/null)" ] && [ -n "$(find "$UNWELL" -mmin -360 2>/dev/null)" ]; then exit 0; fi
 
 # Every check on the commit has passed: none still running, none failed.
 verdict=$(curl -fsS -H "Accept: application/vnd.github+json" "$CHECKS_URL/$new/check-runs?per_page=100" | jq -r '
@@ -123,6 +126,7 @@ if [ "$(sed -n 's/^SUPABASE_TAG=//p' "$FACTORY/setup.sh")" != "$(cat "$PLATFORM_
 fi
 if (apply) && healthy; then
   say "$new deployed"
+  rm -f "$UNWELL"
   status deployed "$new" "applied: $(tr '\n' ' ' <<<"$changed")"
   exit 0
 fi
@@ -130,9 +134,9 @@ fi
 say "$new left the platform unwell: back to $cur"
 git reset -q --hard "$cur"
 (apply) || true
-echo "$new" > "$REFUSED"
+echo "$new" > "$UNWELL"
 if healthy; then
-  status rolled-back "$new" "the platform was unwell after it; back on the previous commit"
+  status rolled-back "$new" "the platform was unwell after it; back on the previous commit, trying again in six hours"
 else
   status unwell "$new" "the platform was unwell after it, and still is on the previous commit"
 fi

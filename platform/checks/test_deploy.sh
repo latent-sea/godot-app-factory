@@ -118,8 +118,13 @@ echo "# a change" >> "$origin/platform/supabase/Caddyfile"
 touch "$origin/platform/BROKEN"
 broken=$(commit "breaks")
 deploy || true
-claim '[ "$(running)" = "$sql2" ] && [ "$(result)" = rolled-back ] && [ "$(cat "$srv/deploy-refused")" = "$broken" ]' "a commit that leaves the platform unwell is rolled back and refused"
+claim '[ "$(running)" = "$sql2" ] && [ "$(result)" = rolled-back ] && [ "$(cat "$srv/deploy-unwell")" = "$broken" ]' "a commit that leaves the platform unwell is rolled back"
 claim '[ "$(grep -c "restart platform-caddy" "$work/log")" = 2 ]' "Caddy restarted for it, and again for the rollback"
+deploy || true
+claim '[ ! -s "$work/log" ]' "it isn't tried again at once"
+touch -d "7 hours ago" "$srv/deploy-unwell"
+deploy || true
+claim 'logged "restart platform-caddy" && [ "$(running)" = "$sql2" ]' "it is tried again after six hours (and rolled back again, still unwell)"
 
 # The scripts themselves changed: installed beside and renamed over
 rm "$origin/platform/BROKEN"
@@ -141,6 +146,12 @@ mkdir -p "$srv/secrets/tls" && touch "$srv/secrets/tls/origin.pem"
 echo "-- after the certificate" >> "$origin/platform/sql/steam.sql"
 late=$(commit "after the certificate")
 deploy || true
-claim '[ "$(running)" = "$early" ] && [ "$(cat "$srv/deploy-refused")" = "$late" ]' "with the certificate in place, Caddy down rolls a deploy back"
+claim '[ "$(running)" = "$early" ] && [ "$(cat "$srv/deploy-unwell")" = "$late" ]' "with the certificate in place, Caddy down rolls a deploy back"
+
+# Caddy back up: once six hours have passed, the same commit goes in
+echo true > "$work/caddy"
+touch -d "7 hours ago" "$srv/deploy-unwell"
+deploy
+claim '[ "$(running)" = "$late" ] && [ "$(result)" = deployed ] && [ ! -f "$srv/deploy-unwell" ]' "a commit rolled back for the machine's sake goes in once the machine is well"
 
 if [ "$failed" = 0 ]; then echo "PASS test_deploy.sh"; else echo "--- last run:"; cat "$work/out"; exit 1; fi
