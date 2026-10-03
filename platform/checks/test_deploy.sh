@@ -44,7 +44,7 @@ cat > "$work/bin/curl" <<EOF
 case "\$*" in
   *check-runs*) cat "$work/checks.json" ;;
   *auth/v1/health*) [ ! -f "$srv/factory/platform/BROKEN" ] ;;
-  *functions/v1*) if [ -f "$srv/factory/platform/BROKEN" ]; then echo 502; else echo 400; fi ;;
+  *functions/v1/hello*) [ ! -f "$srv/factory/platform/BROKEN" ] ;;
   *) exit 1 ;;
 esac
 EOF
