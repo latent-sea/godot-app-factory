@@ -1,6 +1,7 @@
 #cloud-config
-# Paste this whole file into "Cloud config" when creating the server on
-# Hetzner. Check two lines first: DOMAIN, whose api. name is the platform,
+# For a provider with a "Cloud config" box when creating the server (Hetzner,
+# for one): paste this whole file there. Elsewhere (Netcup), bootstrap.sh does
+# the same from one command. Check two lines first: DOMAIN, whose api. name is the platform,
 # and PLAY_DOMAIN, whose play. name is Lizarding's game server (the same
 # domain will do). Both point at this machine, through Cloudflare.
 #

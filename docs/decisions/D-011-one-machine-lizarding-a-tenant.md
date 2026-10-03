@@ -3,6 +3,20 @@
 Ian decided this on 2 Oct 2026. It replaces the separate campaign machine and
 the December date in D-010's hosting plan.
 
+**Update, 3 Oct 2026: the machine is a Netcup VPS.** When it came to ordering,
+Hetzner's cheap shared range had been sold out everywhere since September,
+and after two price rises its next x86 size (CPX32) was €35.49 a month. After
+comparing the main European providers, Ian chose Netcup's VPS 1000 G12.5:
+4 shared x86 cores, 8 GB, 128 GB, about €14 a month (€12 on a 12-month term),
+before VAT. Nothing else here changes. What did:
+- The setup starts from one command (`platform/bootstrap.sh`), as Netcup has
+  no cloud-config box, and builds its own firewall.
+- Hetzner's daily off-machine disk backups don't come across, so copies of
+  the nightly dump off the machine are still to be arranged.
+- Netcup's shared cores have a fair-use limit on long stretches at 100%,
+  which the platform doesn't approach; dedicated cores (its RS range) are the
+  step up when Lizarding needs them.
+
 **Problem.** D-010 chose Supabase, self-hosted later on Hetzner, with a
 separate machine for Lizarding's campaign. Lizarding is ready to build now, the
 budget doesn't run to dedicated cores, and it wasn't settled who owns what on

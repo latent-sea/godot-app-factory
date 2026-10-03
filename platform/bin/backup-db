@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # The whole database - every app's data, every tenant's schema, sign-ins and
 # roles - dumped to /srv/backups, keeping the last 7. Run nightly by
-# platform-backup.timer. The machine's daily backup (Hetzner) copies /srv,
-# this folder included, off the machine.
+# platform-backup.timer. They stay on this machine until copies off it are
+# set up (README, "Backups").
 #
 # Restore onto a fresh platform (see README, "Restoring"):
 #   gunzip -c /srv/backups/db-<date>.sql.gz | docker compose exec -T db psql -U supabase_admin -d postgres

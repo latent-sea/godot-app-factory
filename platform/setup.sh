@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
-# Sets up the shared platform on a fresh Ubuntu 24.04 machine, as root. Run
-# once by cloud-init.yaml at first boot; safe to run again.
+# Sets up the shared platform on a fresh Ubuntu 24.04 machine, as root. Started
+# by bootstrap.sh (or by cloud-init.yaml where a provider takes one); safe to
+# run again.
 #
-# - The machine: SSH by key only, automatic security updates and reboots,
-#   Docker from Docker's own repository.
+# - The machine: SSH by key only, a firewall open on 22 and 443 only, automatic
+#   security updates and reboots, Docker from Docker's own repository.
 # - Supabase, self-hosted from its own docker/ folder at a pinned release, with
 #   the factory's changes (supabase/platform.yml) and its own fresh secrets.
 # - The platform's SQL and functions: tenants' queues, deleting a player
 #   everywhere, and Steam sign-in.
 # - Lizarding, the first tenant (tenants/add-tenant.sh).
 # - A nightly dump of the whole database.
+# - Deploying itself: every five minutes it takes the factory's main branch,
+#   once its checks pass (bin/deploy).
 #
 # Secrets are made here and stay on the machine, readable by root only, in
 # /srv/platform/secrets and /srv/platform/supabase/.env.
@@ -39,6 +42,16 @@ PermitRootLogin prohibit-password
 EOF
 # Ubuntu 24.04 starts SSH on demand, so it may not be running to reload
 systemctl try-reload-or-restart ssh
+
+say "firewall: in on SSH (22) and HTTPS (443) only"
+# Docker's published ports are all bound to 127.0.0.1 (supabase/platform.yml), so
+# they stay closed even though Docker's own rules sit beside these.
+apt-get install -y ufw
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow 22/tcp
+ufw allow 443/tcp
+ufw --force enable
 
 say "automatic security updates, rebooting at 04:30 when one needs it"
 apt-get install -y unattended-upgrades
@@ -119,10 +132,7 @@ wait_for docker compose exec -T db pg_isready -U postgres -h localhost
 wait_for curl -fs -o /dev/null http://127.0.0.1:8000/auth/v1/health -H "apikey: $(grep '^SUPABASE_PUBLISHABLE_KEY=' .env | cut -d= -f2-)"
 
 say "the platform's SQL"
-admin_sql() { docker compose exec -T db psql -qX -v ON_ERROR_STOP=1 -U supabase_admin -d postgres; }
-admin_sql < "$FACTORY/sql/queues.sql"
-admin_sql < "$FACTORY/sql/delete_player.sql"
-admin_sql < "$FACTORY/sql/steam.sql"
+bash "$FACTORY/bin/apply-sql"
 
 say "the platform's functions"
 # each beside Supabase's own main and hello, where the functions container finds them
@@ -135,11 +145,18 @@ bash "$FACTORY/tenants/add-tenant.sh" lizarding 8100
 
 # --- backups ----------------------------------------------------------------
 
-say "nightly database dump at 03:30"
+say "nightly database dump at 03:30, and deploying main every five minutes"
 install -m 0755 "$FACTORY/bin/backup-db" /usr/local/sbin/platform-backup-db
-install -m 0644 "$FACTORY/systemd/platform-backup.service" "$FACTORY/systemd/platform-backup.timer" /etc/systemd/system/
+install -m 0755 "$FACTORY/bin/apply-sql" /usr/local/sbin/platform-apply-sql
+install -m 0755 "$FACTORY/bin/deploy" /usr/local/sbin/platform-deploy
+install -m 0644 "$FACTORY"/systemd/platform-*.service "$FACTORY"/systemd/platform-*.timer /etc/systemd/system/
+# what the deploys did, served by Caddy at /platform/status: commits and times only
+install -d -m 0755 "$PLATFORM_DIR/status"
+[ -f "$PLATFORM_DIR/status/status.json" ] || jq -n --arg commit "$(git -C "$PLATFORM_DIR/factory" rev-parse HEAD)" --arg at "$(date -u +%FT%TZ)" \
+  '{result: "set up", commit: $commit, detail: "first boot", at: $at, running: $commit}' > "$PLATFORM_DIR/status/status.json"
+chmod 644 "$PLATFORM_DIR/status/status.json"
 systemctl daemon-reload
-systemctl enable --now platform-backup.timer
+systemctl enable --now platform-backup.timer platform-deploy.timer
 
 say "Cloudflare's public certificate for Authenticated Origin Pulls"
 curl -fsSL https://developers.cloudflare.com/ssl/static/authenticated_origin_pull_ca.pem -o "$PLATFORM_DIR/secrets/tls/cloudflare-origin-pull-ca.pem"

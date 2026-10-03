@@ -1,6 +1,6 @@
 # The shared platform
 
-One Hetzner machine runs the shared backend: self-hosted Supabase for the
+One machine (a Netcup VPS) runs the shared backend: self-hosted Supabase for the
 factory's apps, and Lizarding's game server as a tenant beside it. The factory
 owns the machine and the platform; Lizarding owns its own parts. Decided in
 [D-011](../docs/decisions/D-011-one-machine-lizarding-a-tenant.md).
@@ -16,8 +16,11 @@ Neither side edits the other's part.
 
 | | |
 | --- | --- |
-| `cloud-init.yaml` | Pasted into Hetzner when ordering the machine; runs `setup.sh` at first boot |
-| `setup.sh` | Sets up the machine, Supabase, the platform's SQL, Lizarding, and backups |
+| `bootstrap.sh` | The one command that starts `setup.sh` on a fresh machine |
+| `cloud-init.yaml` | The same, for a provider with a box to paste it into when ordering |
+| `setup.sh` | Sets up the machine, its firewall, Supabase, the platform's SQL, Lizarding, backups, and deploying |
+| `bin/deploy` | Every five minutes: takes main once its checks pass, applies what changed, rolls back if the platform is unwell. Tested by `checks/test_deploy.sh` |
+| `bin/apply-sql` | The platform's SQL, in order |
 | `supabase/platform.yml` | The factory's changes to Supabase's own compose file: only Caddy reachable from outside, memory ceilings, Postgres sized for 8 GB |
 | `supabase/Caddyfile` | The one open door, on 443: `api.<domain>` and `play.<play domain>`, answering only Cloudflare |
 | `sql/queues.sql` | Tenants create and drop their own queues (Supabase Queues) through the platform |
@@ -32,21 +35,24 @@ Neither side edits the other's part.
 
 ## Ordering the machine
 
-On Hetzner Cloud, create a server with:
+On Netcup, order a **VPS 1000 G12.5**: 4 shared **x86** cores, 8 GB, 128 GB, in
+Nuremberg. (x86 because Lizarding's program is built for x86-64. Hetzner's
+equivalent was sold out and its next size up three times the price; see D-011.)
 
-- **Location:** Nuremberg or Falkenstein (Germany).
-- **Image:** Ubuntu 24.04.
-- **Type:** Shared vCPU, **x86** (AMD or Intel, not Arm), 4 vCPU and 8 GB.
-  Lizarding's program is built for x86-64, so an Arm machine can't run it.
-- **Networking:** public IPv4 and IPv6.
-- **SSH key:** your own public key. Root logs in with it; passwords are off.
-- **Firewall:** a new one allowing inbound TCP 22 (SSH) and TCP 443 only.
-- **Backups:** on. Hetzner keeps 7 daily copies of the whole disk off the machine.
-- **Cloud config:** all of `cloud-init.yaml`, with `DOMAIN=` (the platform, `api.`) and
-  `PLAY_DOMAIN=` (Lizarding's game server, `play.`) checked. They may be the same domain.
+1. **System:** in Netcup's server panel, install **Ubuntu 24.04** with your own
+   SSH public key, so root logs in with it.
+2. **Start the setup:** log in as root and run
 
-Setup takes about ten minutes after the server starts. Its log is at
-`/var/log/platform-setup.log`.
+       curl -fsSL https://raw.githubusercontent.com/latent-sea/godot-app-factory/main/platform/bootstrap.sh | bash -s latent-sea.com
+
+   (a second domain after the first puts Lizarding's players on `play.<it>`). It
+   refuses to start unless a key can log in, since the setup turns passwords
+   off. The setup carries on if you log out, takes about ten minutes, and logs
+   to `/var/log/platform-setup.log`.
+
+The setup builds its own firewall: in on TCP 22 and 443 only. Where a
+provider takes a cloud-config file when ordering, `cloud-init.yaml` does the
+same as step 2.
 
 ## By hand, after ordering
 
@@ -79,11 +85,24 @@ Setup takes about ten minutes after the server starts. Its log is at
   `volumes/db/data`; the factory's `platform.yml` carries every change to the
   compose file, so nothing in the copied files needs editing. Then run
   `docker compose pull && docker compose up -d`. Take a dump first.
+- **Deploying changes:** merging to main is the whole of it. Every five minutes
+  the machine fetches main and takes a new commit once every GitHub check on it
+  has passed, applying only what changed under `platform/` (SQL, functions,
+  compose changes, the Caddyfile, these scripts). If the platform doesn't answer
+  afterwards it goes back to the commit it was on and refuses the new one. See
+  what happened at `https://api.<domain>/platform/status`, or
+  `journalctl -u platform-deploy`. The machine pulls; GitHub holds no key to it.
+  - SQL only moves forward: every file is safe to run again and only adds or
+    replaces, because going back to an earlier commit doesn't undo it.
+  - A Caddyfile change restarts Caddy, so connected players reconnect.
+  - Supabase's own version is never changed this way (next item).
 - **Restoring:** on a fresh machine set up the same way, stop everything but
   the database, then run
   `gunzip -c db-<date>.sql.gz | docker compose exec -T db psql -U supabase_admin -d postgres`,
-  copy back `/srv/lizarding` and `.env`, and start again. Hetzner's backups
-  restore the whole disk in one step instead.
+  copy back `/srv/lizarding` and `.env`, and start again.
+- **Backups:** the nightly dump stays on the machine, in `/srv/backups`.
+  Copies off the machine aren't set up yet; until they are, take a snapshot in
+  Netcup's panel before anything risky.
 
 ## For Lizarding
 
@@ -111,6 +130,7 @@ Setup takes about ten minutes after the server starts. Its log is at
   as a stub:
   `create function lizarding.forget_player(player uuid) returns void language sql security definer set search_path = lizarding as 'select';`
   `sql/delete_player.sql` says what it must do.
-- **Backups:** the nightly dump covers your schema. Hetzner's daily disk backup
-  covers `/srv/lizarding`. Write files you can't lose atomically (write a new
-  file, then rename it), since a disk copy may land mid-write.
+- **Backups:** the nightly dump covers your schema. Nothing yet copies
+  `/srv/lizarding` off the machine, so keep what you can't lose in your
+  repository or the database. Write files atomically (write a new file, then
+  rename it), since a snapshot may land mid-write.
