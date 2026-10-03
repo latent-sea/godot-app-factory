@@ -8,9 +8,11 @@ extends SceneTree
 ##   BACKEND_URL=https://... BACKEND_KEY=sb_publishable_... \
 ##     godot --headless --path apps/<app> --script res://addons/factory_backend/tests/online.gd
 ##
-## The platform needs anonymous sign-in on, and the notes table of
-## experiments/backend/app.sql. Prints PASS online.gd, or every claim that
-## did not hold.
+## The platform needs anonymous sign-in on, and a table each player sees only
+## their own rows of, published live: the platform's own platform_check
+## (platform/sql/checks.sql) unless BACKEND_TABLE names another (the hosted
+## test project's is "notes"). Prints PASS online.gd, or every claim that did
+## not hold.
 
 const Backend := preload("res://addons/factory_backend/backend.gd")
 const KEPT := "user://backend_online_session.json"
@@ -22,6 +24,9 @@ func _init() -> void:
 	await process_frame
 	var url := OS.get_environment("BACKEND_URL")
 	var key := OS.get_environment("BACKEND_KEY")
+	var table := OS.get_environment("BACKEND_TABLE")
+	if table.is_empty():
+		table = "platform_check"
 	if url.is_empty() or key.is_empty():
 		print("set BACKEND_URL and BACKEND_KEY")
 		quit(2)
@@ -40,7 +45,7 @@ func _init() -> void:
 	var live := tablet.channel("online-check")
 	var arrived: Array = []
 	live.changed.connect(func(change: Dictionary) -> void: arrived.append([change, Time.get_ticks_msec()]))
-	live.on_changes("notes", "INSERT").join()
+	live.on_changes(table, "INSERT").join()
 	var started := Time.get_ticks_msec()
 	while not live.is_joined and Time.get_ticks_msec() - started < 15000:
 		await process_frame
@@ -49,7 +54,7 @@ func _init() -> void:
 
 	var body := "online check %d" % Time.get_ticks_msec()
 	var sent_at := Time.get_ticks_msec()
-	var saved: Backend.Reply = await phone.insert("notes", {"body": body})
+	var saved: Backend.Reply = await phone.insert(table, {"body": body})
 	_claim(saved.ok and saved.data is Array and saved.data[0]["body"] == body, "a note is saved: %s" % saved.error)
 	while arrived.is_empty() and Time.get_ticks_msec() - sent_at < 10000:
 		await process_frame
@@ -57,7 +62,7 @@ func _init() -> void:
 	if not arrived.is_empty():
 		print("live update in %d ms" % (arrived[0][1] - sent_at))
 
-	var mine: Backend.Reply = await phone.select("notes", "body=eq." + body.uri_encode())
+	var mine: Backend.Reply = await phone.select(table, "body=eq." + body.uri_encode())
 	_claim(mine.ok and mine.data is Array and mine.data.size() == 1, "and reads it back")
 
 	var refreshed: Backend.Reply = await phone.refresh()
@@ -69,7 +74,7 @@ func _init() -> void:
 	var stranger := Backend.new(url, key, "user://backend_online_stranger.json")
 	root.add_child(stranger)
 	await stranger.sign_in_anonymously()
-	var theirs: Backend.Reply = await stranger.select("notes", "body=eq." + body.uri_encode())
+	var theirs: Backend.Reply = await stranger.select(table, "body=eq." + body.uri_encode())
 	_claim(theirs.ok and theirs.data is Array and theirs.data.is_empty(), "a stranger can't read it")
 
 	live.leave()

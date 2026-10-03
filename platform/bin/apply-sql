@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
-# The platform's SQL, in order, as the platform's admin. Run by setup.sh at
-# first boot and by platform-deploy whenever platform/sql changes, so every
-# file must be safe to run again, and only ever add or replace: a deploy that
-# goes back to an earlier commit runs the earlier files, which don't undo
-# anything (README, "Deploying changes").
+# The platform's SQL, then every app's (apps/<app>/backend.sql), as the
+# platform's admin, each file in one transaction. Run by setup.sh at first
+# boot and by platform-deploy whenever any of them changes, so every file must
+# be safe to run again, and only ever add or replace: a deploy that goes back
+# to an earlier commit runs the earlier files, which don't undo anything
+# (README, "Deploying changes").
 set -euo pipefail
 PLATFORM_DIR=${PLATFORM_DIR:-/srv/platform}
-FACTORY="$PLATFORM_DIR/factory/platform"
+REPO="$PLATFORM_DIR/factory"
 cd "$PLATFORM_DIR/supabase"
-for file in queues delete_player steam; do
-  docker compose exec -T db psql -qX -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < "$FACTORY/sql/$file.sql"
+run() {
+  echo "sql: ${1#"$REPO"/}"
+  docker compose exec -T db psql -qX -1 -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < "$1"
+}
+for file in queues delete_player steam checks; do
+  run "$REPO/platform/sql/$file.sql"
 done
+for file in "$REPO"/apps/*/backend.sql; do
+  [ -f "$file" ] && run "$file"
+done
+exit 0

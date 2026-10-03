@@ -20,7 +20,7 @@ Neither side edits the other's part.
 | `cloud-init.yaml` | The same, for a provider with a box to paste it into when ordering |
 | `setup.sh` | Sets up the machine, its firewall, Supabase, the platform's SQL, Lizarding, backups, and deploying |
 | `bin/deploy` | Every five minutes: takes main once its checks pass, applies what changed, rolls back if the platform is unwell. Tested by `checks/test_deploy.sh` |
-| `bin/apply-sql` | The platform's SQL, in order |
+| `bin/apply-sql` | The platform's SQL, then every app's tables, in order |
 | `supabase/platform.yml` | The factory's changes to Supabase's own compose file: only Caddy reachable from outside, memory ceilings, Postgres sized for 8 GB |
 | `supabase/Caddyfile` | The one open door, on 443: `api.<domain>` and `play.<play domain>`, answering only Cloudflare |
 | `sql/queues.sql` | Tenants create and drop their own queues (Supabase Queues) through the platform |
@@ -105,6 +105,37 @@ same as step 2.
 - **Backups:** the nightly dump stays on the machine, in `/srv/backups`.
   Copies off the machine aren't set up yet; until they are, take a snapshot in
   Netcup's panel before anything risky.
+
+## Apps' tables
+
+An app that keeps data on the platform puts its tables in
+`apps/<app>/backend.sql`. Merged to main, the machine applies the file by
+itself (`bin/apply-sql`, run by `bin/deploy`), in one transaction, after the
+platform's own SQL. Every app's file runs on every deploy that touches any of
+them, so each must be safe to run again. Apps share the `public` schema (the
+one apps read and write through the platform), so names keep them apart.
+
+The rules, held by `checks/app_sql_check.py` in CI:
+- **Names are the app's:** every table, view and function is
+  `public.<app>_<name>`, and policies, triggers and indexes go only on the
+  app's own tables.
+- **Safe to run again:** `create table if not exists`; policies and triggers
+  dropped with `if exists` and made again; nothing else dropped.
+- **Rows are protected:** every table has row-level security, with policies
+  saying who may read and write each row (usually `owner = auth.uid()`).
+- **Players can be deleted:** every table has a column
+  `references auth.users (id) on delete cascade`, so deleting a player removes
+  their rows. A table holding no player data says `-- no player data`.
+- **Only the app's:** no roles, schemas, extensions or publications, and
+  nothing of the platform's or another app's.
+- **Only forward:** going back to an earlier commit doesn't undo a table, so a
+  change that removes something is a person's job, done by hand.
+
+To publish a table live, add it to `supabase_realtime` (see
+`platform/sql/checks.sql`). `checks/test_sql.sh` loads the platform's table
+and every app's into a real PostgreSQL, twice, and checks one player can't
+see or write another's rows. The platform's own table, `platform_check`, is
+what `services/backend/tests/online.gd` checks the live platform with.
 
 ## For Lizarding
 

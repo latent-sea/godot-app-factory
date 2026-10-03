@@ -5,8 +5,9 @@
 # - Fetches main. A commit is taken only once every GitHub check on it has
 #   passed; one that failed is never taken, and one still running is looked at
 #   again next time.
-# - Applies only what changed under platform/: the SQL, the functions, the
-#   compose changes, the Caddyfile, and these scripts and timers themselves.
+# - Applies only what changed under platform/ (the SQL, the functions, the
+#   compose changes, the Caddyfile, and these scripts and timers themselves)
+#   and in apps' tables (apps/<app>/backend.sql).
 # - Then checks the platform answers. If it doesn't, it goes back to the
 #   commit it was on and applies that again. It tries the new commit again
 #   after six hours (the cause may have been the machine, not the commit),
@@ -66,7 +67,8 @@ case "$verdict" in
     exit 0 ;;
 esac
 
-changed=$(git diff --name-only "$cur" "$new" -- platform/)
+# the platform's folder, and each app's tables
+changed=$(git diff --name-only "$cur" "$new" -- platform/ apps/ | grep -E '^platform/|^apps/[^/]+/backend\.sql$' || true)
 touches() { grep -q "^platform/$1" <<<"$changed"; }
 
 # What changed, applied to the commit the repository is now at.
@@ -90,7 +92,7 @@ apply() {
     say "Caddyfile (players connected through it reconnect)"
     docker restart platform-caddy >/dev/null
   fi
-  if touches sql/; then
+  if touches sql/ || grep -q '^apps/' <<<"$changed"; then
     say "SQL"
     PLATFORM_DIR="$PLATFORM_DIR" bash "$FACTORY/bin/apply-sql"
   fi
@@ -118,7 +120,7 @@ healthy() {
 if [ -n "$changed" ]; then say "$cur -> $new: $(tr '\n' ' ' <<<"$changed")"; fi
 git reset -q --hard "$new"
 if [ -z "$changed" ]; then
-  status deployed "$new" "nothing under platform/ changed"
+  status deployed "$new" "nothing the platform runs changed"
   exit 0
 fi
 if [ "$(sed -n 's/^SUPABASE_TAG=//p' "$FACTORY/setup.sh")" != "$(cat "$PLATFORM_DIR/supabase/.supabase-version")" ]; then
