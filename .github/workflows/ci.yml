@@ -104,6 +104,14 @@ jobs:
       - name: Steam sign-in
         run: node --test platform/functions/steam-signin/steam.test.ts
 
+      - name: Apps' tables hold the platform's rules
+        run: |
+          python3 platform/checks/test_app_sql_check.py
+          python3 platform/checks/app_sql_check.py
+
+      - name: The platform's and apps' tables in a real PostgreSQL
+        run: bash platform/checks/test_sql.sh
+
       - name: Supabase's compose file with the factory's changes
         run: |
           tag=$(sed -n 's/^SUPABASE_TAG=//p' platform/setup.sh)

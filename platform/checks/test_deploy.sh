@@ -134,6 +134,17 @@ deploy
 claim '[ "$(running)" = "$scripts" ] && grep -q "# touched" "$work/sbin/platform-deploy" && [ -x "$work/sbin/platform-apply-sql" ]' "changed scripts are installed"
 claim '[ -f "$work/units/platform-deploy.timer" ] && logged "systemctl daemon-reload"' "and the timers, with systemd told"
 
+# An app's tables changed: the SQL is applied; its other files are nothing to the platform
+mkdir -p "$origin/apps/blog"
+echo "-- the blog's tables" > "$origin/apps/blog/backend.sql"
+tables=$(commit "an app's tables")
+deploy
+claim '[ "$(running)" = "$tables" ] && logged "exec -T db psql"' "an app's tables are applied"
+echo "extends Node" > "$origin/apps/blog/blog.gd"
+code=$(commit "an app's code")
+deploy
+claim '[ "$(running)" = "$code" ] && [ ! -s "$work/log" ] && [ "$(result)" = deployed ]' "an app's other files change nothing on the platform"
+
 # Caddy down before Cloudflare's certificate is in place: still healthy
 echo false > "$work/caddy"
 echo "-- before the certificate" >> "$origin/platform/sql/steam.sql"
