@@ -10,3 +10,5 @@
 __pycache__/
 # A site's copy of gd-chime for the web, filled by tooling/install_site.py; never edited by hand.
 /sites/*/gd_chime/
+# A site's copies of the services its site.json names (web/<service>/), from the same tool.
+/sites/*/backend/

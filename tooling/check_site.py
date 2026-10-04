@@ -6,8 +6,9 @@
 
 Run tooling/install_site.py first.
 
-The framework's tests (web/gd_chime/tests/test_*.mjs) run under Node's own
-test runner and must all pass, and its own page (tests/ui/), which uses
+The framework's tests (web/gd_chime/tests/test_*.mjs) and the services'
+(web/<service>/tests/test_*.mjs) run under Node's own test runner and must
+all pass, and its own page (tests/ui/), which uses
 every primitive, walks itself in the browser. Then each site is served from its folder
 and opened headless in Chrome at index.html?probe, which makes the site
 walk itself (its probe.js) instead of waiting for a reader: it prints
@@ -28,7 +29,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from sites import FRAMEWORK, ROOT, Served, SiteError, find_browser, find_sites
+from sites import FRAMEWORK, ROOT, SERVICES, Served, SiteError, find_browser, find_sites
 
 ## A console message as Chrome prints it to its stderr, at any level: the message in quotes, then where it came from.
 CONSOLE = re.compile(r':CONSOLE[^\]]*\] "(.*?)", source: ', re.DOTALL)
@@ -60,16 +61,17 @@ def verdict(name: str, returncode: int, said: list[str], pass_line: str) -> str 
     return f"{name}: " + ", ".join(reasons) + "\n" + "".join(f"    | {line}\n" for line in said[-60:])
 
 
-def framework_tests(node: str) -> str | None:
-    """Why the framework's own tests failed, or None when they passed."""
-    tests = sorted((FRAMEWORK / "tests").glob("test_*.mjs"))
+def framework_tests(node: str, folder: Path = FRAMEWORK) -> str | None:
+    """Why the tests of the framework (or of a service, under web/) failed, or None when they passed."""
+    name = folder.relative_to(ROOT).as_posix()
+    tests = sorted((folder / "tests").glob("test_*.mjs"))
     if not tests:
-        return "web/gd_chime/tests has no test_*.mjs"
+        return f"{name}/tests has no test_*.mjs"
     done = subprocess.run([node, "--test", *map(str, tests)], capture_output=True, text=True, timeout=300)
-    print(f"  {'ok  ' if done.returncode == 0 else 'FAIL'} web/gd_chime/tests ({len(tests)} files)")
+    print(f"  {'ok  ' if done.returncode == 0 else 'FAIL'} {name}/tests ({len(tests)} files)")
     if done.returncode == 0:
         return None
-    return "web/gd_chime tests:\n" + "".join(f"    | {line}\n" for line in (done.stdout + done.stderr).strip().splitlines()[-80:])
+    return f"{name} tests:\n" + "".join(f"    | {line}\n" for line in (done.stdout + done.stderr).strip().splitlines()[-80:])
 
 
 def probe(browser: str, folder: Path, page: str = "index.html", name: str = "") -> str | None:
@@ -84,7 +86,7 @@ def probe(browser: str, folder: Path, page: str = "index.html", name: str = "") 
             return f"{name} probe: still running after 120s; stopped"
     said = console_lines(done.stderr)
     problem = verdict(f"{name} probe", done.returncode, said, "PROBE OK")
-    print(f"  {'ok  ' if problem is None else 'FAIL'} probe{'' if page == 'index.html' else ' ' + page}")
+    print(f"  {'ok  ' if problem is None else 'FAIL'} probe{'' if page == 'index.html' else f' {name}/{page}'}")
     return problem
 
 
@@ -102,13 +104,16 @@ def main(argv: list[str]) -> int:
         browser = find_browser(args.chrome)
         sites = find_sites(ROOT, args.sites)
         print("check: web/gd_chime")
-        problem = framework_tests(node)
-        if problem:
-            failures.append(problem)
-        # every primitive, in the framework's own page, walked in the browser
-        problem = probe(browser, FRAMEWORK, "tests/ui/index.html", "web/gd_chime")
-        if problem:
-            failures.append(problem)
+        for folder in [FRAMEWORK, *(ROOT / "web" / s for s in SERVICES)]:
+            problem = framework_tests(node, folder)
+            if problem:
+                failures.append(problem)
+        # every primitive, in the framework's own page, walked in the browser; each service's page too
+        for folder in [FRAMEWORK, *(ROOT / "web" / s for s in SERVICES)]:
+            if (folder / "tests" / "ui" / "index.html").is_file():
+                problem = probe(browser, folder, "tests/ui/index.html", folder.relative_to(ROOT).as_posix())
+                if problem:
+                    failures.append(problem)
         for site in sites:
             print(f"check: {site.name}")
             if not (site / "gd_chime").is_dir():

@@ -10,6 +10,7 @@ holding a `site.json` is one site:
 | `probe.js` | the site walked as a person would, opened with `?probe` |
 | `site.json` | its title |
 | `gd_chime/` | its copy of the framework, from `tooling/install_site.py` (gitignored) |
+| `backend/` | its copy of the platform's client (`web/backend/`), when `site.json` names `"services": ["backend"]` (gitignored) |
 
     python tooling/create_site.py <name>     # a new one, saying hello
     python tooling/install_site.py           # every site's gd_chime/

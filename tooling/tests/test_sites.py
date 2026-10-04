@@ -47,6 +47,24 @@ class SitesTest(unittest.TestCase):
         installed = sorted(p.relative_to(self.site / "gd_chime").as_posix() for p in (self.site / "gd_chime").rglob("*"))
         self.assertEqual(installed, ["gd_chime.js"])
 
+    def test_install_copies_the_services_a_site_names_and_takes_out_the_rest(self) -> None:
+        backend = self.root / "web" / "backend"
+        (backend / "tests").mkdir(parents=True)
+        (backend / "backend.js").write_text("export class Backend {}\n")
+        (backend / "tests" / "test_backend.mjs").write_text("// a test\n")
+        (self.site / "site.json").write_text(json.dumps({"title": "Hello", "services": ["backend"]}))
+        self.assertEqual(install_site.install_services(self.site, self.root / "web"), ["backend"])
+        installed = sorted(p.relative_to(self.site / "backend").as_posix() for p in (self.site / "backend").rglob("*"))
+        self.assertEqual(installed, ["backend.js"])
+        (self.site / "site.json").write_text(json.dumps({"title": "Hello"}))
+        install_site.install_services(self.site, self.root / "web")
+        self.assertFalse((self.site / "backend").exists())
+
+    def test_a_site_naming_no_such_service_is_refused(self) -> None:
+        (self.site / "site.json").write_text(json.dumps({"title": "Hello", "services": ["backnd"]}))
+        with self.assertRaisesRegex(sites.SiteError, "backnd, which isn't a service"):
+            sites.read_manifest(self.site)
+
     def test_export_leaves_out_what_only_a_check_needs(self) -> None:
         install_site.install_into(self.site, self.framework)
         out = self.root / "build" / "web"
