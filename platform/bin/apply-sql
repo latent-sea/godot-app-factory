@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# The platform's SQL, then every app's (apps/<app>/backend.sql), as the
-# platform's admin, each file in one transaction. Run by setup.sh at first
-# boot and by platform-deploy whenever any of them changes, so every file must
-# be safe to run again, and only ever add or replace: a deploy that goes back
-# to an earlier commit runs the earlier files, which don't undo anything
-# (README, "Deploying changes").
+# The platform's SQL, then every app's and site's (apps/<app>/backend.sql,
+# sites/<site>/backend.sql), as the platform's admin, each file in one
+# transaction. Run by setup.sh at first boot and by platform-deploy whenever
+# any of them changes, so every file must be safe to run again, and only ever
+# add or replace: a deploy that goes back to an earlier commit runs the
+# earlier files, which don't undo anything (README, "Deploying changes").
 set -euo pipefail
 PLATFORM_DIR=${PLATFORM_DIR:-/srv/platform}
 REPO="$PLATFORM_DIR/factory"
@@ -16,7 +16,7 @@ run() {
 for file in queues delete_player steam checks; do
   run "$REPO/platform/sql/$file.sql"
 done
-for file in "$REPO"/apps/*/backend.sql; do
+for file in "$REPO"/apps/*/backend.sql "$REPO"/sites/*/backend.sql; do
   [ -f "$file" ] && run "$file"
 done
 exit 0

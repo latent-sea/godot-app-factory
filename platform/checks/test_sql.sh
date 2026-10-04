@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# The platform's own table and every app's (apps/<app>/backend.sql) in a real,
-# throwaway PostgreSQL with a stand-in for Supabase (supabase_stub.sql): each
-# loads, loads again (every deploy runs them all), and keeps one player's rows
-# from another. Run by CI; prints PASS test_sql.sh, or what failed.
+# The platform's own table and every app's and site's (apps/<app>/backend.sql,
+# sites/<site>/backend.sql) in a real, throwaway PostgreSQL with a stand-in
+# for Supabase (supabase_stub.sql): each loads, loads again (every deploy runs
+# them all), and keeps one player's rows from another. Run by CI; prints PASS
+# test_sql.sh, or what failed.
 #
 #   bash platform/checks/test_sql.sh
 set -euo pipefail
@@ -21,7 +22,7 @@ sql() { PGOPTIONS='-c client_min_messages=warning' as_pg psql -h "$work" -U supa
 
 sql < "$repo/platform/checks/supabase_stub.sql"
 files=("$repo/platform/sql/checks.sql")
-for app in "$repo"/apps/*/backend.sql; do [ -f "$app" ] && files+=("$app"); done
+for app in "$repo"/apps/*/backend.sql "$repo"/sites/*/backend.sql; do [ -f "$app" ] && files+=("$app"); done
 for round in first second; do
   for file in "${files[@]}"; do
     sql -1 < "$file" || { echo "NOT TRUE: ${file#"$repo"/} loads a $round time"; exit 1; }
