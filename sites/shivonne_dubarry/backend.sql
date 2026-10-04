@@ -33,7 +33,7 @@ $$;
 -- one row: how her week is read
 create table if not exists public.shivonne_dubarry_settings (  -- no player data
   id boolean primary key default true check (id),
-  time_zone text not null default 'Pacific/Auckland',
+  time_zone text not null default 'Europe/Madrid',
   slot_minutes int not null default 60 check (slot_minutes between 15 and 240),
   notice_hours int not null default 24 check (notice_hours between 0 and 336),
   horizon_days int not null default 28 check (horizon_days between 1 and 120)
