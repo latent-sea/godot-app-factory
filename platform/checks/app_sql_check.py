@@ -1,8 +1,10 @@
-"""Holds every app's tables to the platform's rules (platform/README.md, "Apps' tables").
+"""Holds every app's and site's tables to the platform's rules (platform/README.md, "Apps' tables").
 
     python3 platform/checks/app_sql_check.py [apps/<app>/backend.sql ...]
 
-With no files, checks every apps/*/backend.sql. Run by CI. For each file:
+With no files, checks every apps/*/backend.sql and sites/*/backend.sql (a
+site's tables follow the same rules, named for the site). Run by CI. For each
+file:
 - every table, view and function is the app's: public.<app>_<name>;
 - tables are made with "create table if not exists", since the file runs on
   every deploy;
@@ -87,11 +89,11 @@ def check(path: Path) -> list[str]:
 
 
 def main(argv: list[str]) -> int:
-    files = [Path(a).resolve() for a in argv] or sorted(ROOT.glob("apps/*/backend.sql"))
+    files = [Path(a).resolve() for a in argv] or sorted(ROOT.glob("apps/*/backend.sql")) + sorted(ROOT.glob("sites/*/backend.sql"))
     problems = [p for f in files for p in check(f)]
     for problem in problems:
         print("NOT TRUE:", problem)
-    print(f"{len(files)} app table file(s)" + ("" if problems else ": all hold the rules"))
+    print(f"{len(files)} table file(s)" + ("" if problems else ": all hold the rules"))
     return 1 if problems else 0
 
 

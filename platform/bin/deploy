@@ -7,7 +7,8 @@
 #   again next time.
 # - Applies only what changed under platform/ (the SQL, the functions, the
 #   compose changes, the Caddyfile, and these scripts and timers themselves)
-#   and in apps' tables (apps/<app>/backend.sql).
+#   and in apps' and sites' tables (apps/<app>/backend.sql,
+#   sites/<site>/backend.sql).
 # - Then checks the platform answers. If it doesn't, it goes back to the
 #   commit it was on and applies that again. It tries the new commit again
 #   after six hours (the cause may have been the machine, not the commit),
@@ -67,8 +68,8 @@ case "$verdict" in
     exit 0 ;;
 esac
 
-# the platform's folder, and each app's tables
-changed=$(git diff --name-only "$cur" "$new" -- platform/ apps/ | grep -E '^platform/|^apps/[^/]+/backend\.sql$' || true)
+# the platform's folder, and each app's and site's tables
+changed=$(git diff --name-only "$cur" "$new" -- platform/ apps/ sites/ | grep -E '^platform/|^(apps|sites)/[^/]+/backend\.sql$' || true)
 touches() { grep -q "^platform/$1" <<<"$changed"; }
 
 # What changed, applied to the commit the repository is now at.
@@ -92,7 +93,7 @@ apply() {
     say "Caddyfile (players connected through it reconnect)"
     docker restart platform-caddy >/dev/null
   fi
-  if touches sql/ || grep -q '^apps/' <<<"$changed"; then
+  if touches sql/ || grep -qE '^(apps|sites)/' <<<"$changed"; then
     say "SQL"
     PLATFORM_DIR="$PLATFORM_DIR" bash "$FACTORY/bin/apply-sql"
   fi

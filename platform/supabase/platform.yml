@@ -56,6 +56,12 @@ services:
     mem_limit: 128m
     environment:
       GOTRUE_JWT_KEYS: ${JWT_KEYS:-[]}
+      # Sign in with Google: the page or app signs in with Google itself and
+      # hands the platform Google's ID token (the id_token grant), so no
+      # client secret and no redirect are needed. A token is accepted only if
+      # Google made it for one of these client IDs (comma-separated, public).
+      GOTRUE_EXTERNAL_GOOGLE_ENABLED: "true"
+      GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_IDS:-400837578052-jqnhh565es3a92k58u5r2oggdcf7mrkr.apps.googleusercontent.com}
 
   rest:
     mem_limit: 128m

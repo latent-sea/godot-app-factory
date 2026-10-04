@@ -145,6 +145,17 @@ code=$(commit "an app's code")
 deploy
 claim '[ "$(running)" = "$code" ] && [ ! -s "$work/log" ] && [ "$(result)" = deployed ]' "an app's other files change nothing on the platform"
 
+# A site's tables likewise; its pages are nothing to the platform (they're hosted elsewhere)
+mkdir -p "$origin/sites/shop"
+echo "-- the shop's tables" > "$origin/sites/shop/backend.sql"
+site_tables=$(commit "a site's tables")
+deploy
+claim '[ "$(running)" = "$site_tables" ] && logged "exec -T db psql"' "a site's tables are applied"
+echo "<p>hello</p>" > "$origin/sites/shop/index.html"
+page=$(commit "a site's page")
+deploy
+claim '[ "$(running)" = "$page" ] && [ ! -s "$work/log" ] && [ "$(result)" = deployed ]' "a site's other files change nothing on the platform"
+
 # Caddy down before Cloudflare's certificate is in place: still healthy
 echo false > "$work/caddy"
 echo "-- before the certificate" >> "$origin/platform/sql/steam.sql"

@@ -72,6 +72,13 @@ same as step 2.
    `STEAM_WEB_API_KEY` (a publisher Web API key, from Steamworks), `STEAM_APP_ID`
    and, if the game uses another, `STEAM_IDENTITY` (default `latensea`); then
    `docker compose up -d functions`. Until then steam-signin answers that it isn't set up.
+6. **Sign in with Google** is on for the factory's Google client ID
+   (`supabase/platform.yml`). The page or app signs in with Google and hands
+   the platform Google's ID token, so the platform needs no Google secret.
+   Each site's address must be listed as an authorised JavaScript origin of
+   that client in the Google Cloud console. Another client (an Android app's,
+   say) is added by setting `GOOGLE_CLIENT_IDS` in `.env` to every client ID,
+   comma-separated, then `docker compose up -d auth`.
 
 ## Running it
 
@@ -109,7 +116,8 @@ same as step 2.
 ## Apps' tables
 
 An app that keeps data on the platform puts its tables in
-`apps/<app>/backend.sql`. Merged to main, the machine applies the file by
+`apps/<app>/backend.sql`, and a site in `sites/<site>/backend.sql`, with the
+same rules (named for the site: `public.<site>_<name>`). Merged to main, the machine applies the file by
 itself (`bin/apply-sql`, run by `bin/deploy`), in one transaction, after the
 platform's own SQL. Every app's file runs on every deploy that touches any of
 them, so each must be safe to run again. Apps share the `public` schema (the
