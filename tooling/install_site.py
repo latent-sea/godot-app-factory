@@ -5,9 +5,11 @@
 
 Replaces sites/<site>/gd_chime/ with a fresh copy of web/gd_chime/ - the
 framework without its tests - so a site is served whole from its own folder
-and a fix to the framework reaches every site on its next install. The
-copy is gitignored; web/gd_chime/ is the only source. Running it twice
-changes nothing the second time.
+and a fix to the framework reaches every site on its next install. Each
+service the site's site.json names ("services": ["backend"]) is copied the
+same way, from web/<service>/ to sites/<site>/<service>/; one it no longer
+names is taken out. The copies are gitignored; web/ is the only source.
+Running it twice changes nothing the second time.
 
 A site is a folder under sites/ holding a site.json.
 """
@@ -18,7 +20,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from sites import FRAMEWORK, ROOT, SiteError, find_sites
+from sites import FRAMEWORK, ROOT, SERVICES, SiteError, find_sites, read_manifest
 
 
 def install_into(site: Path, framework: Path = FRAMEWORK) -> Path:
@@ -30,11 +32,24 @@ def install_into(site: Path, framework: Path = FRAMEWORK) -> Path:
     return dest
 
 
+def install_services(site: Path, web: Path) -> list[str]:
+    """Copy in each service the site names, without its tests; take out any it no longer names."""
+    named = read_manifest(site).get("services", [])
+    for service in SERVICES:
+        dest = site / service
+        if dest.exists():
+            shutil.rmtree(dest)
+        if service in named:
+            shutil.copytree(web / service, dest, ignore=shutil.ignore_patterns("tests", "__pycache__"))
+    return named
+
+
 def install(root: Path, names: list[str]) -> list[Path]:
     sites = find_sites(root, names)
     for site in sites:
         install_into(site, root / "web" / "gd_chime")
-        print(f"install_site: {site.name}: gd_chime")
+        services = install_services(site, root / "web")
+        print(f"install_site: {site.name}: {', '.join(['gd_chime', *services])}")
     return sites
 
 

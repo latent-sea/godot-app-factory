@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>backend.js in a browser</title>
+</head>
+<body>
+<p>backend.js in a real browser: it loads as a module, keeps the session in
+localStorage across a fresh Backend, and fails softly when nothing answers.
+Opened with ?probe by tooling/check_site.py, it prints PROBE OK or what failed.</p>
+<script type="module">
+import { Backend, browserStorage } from "../../backend.js";
+
+const failed = [];
+const claim = (held, what) => { if (!held) failed.push(what); };
+const name = `backend_probe_${Date.now()}`;
+const answers = [{ access_token: "t1", refresh_token: "r1", expires_in: 3600, user: { id: "browser-player" } }];
+const transport = async () => ({ status: 200, text: JSON.stringify(answers.shift() ?? []) });
+
+const first = new Backend("https://api.example.test", "sb_publishable_test", { keptIn: name, transport });
+await first.signInAnonymously();
+claim(first.playerId() === "browser-player", "a sign-in is kept in the page");
+claim(JSON.parse(localStorage.getItem(name) ?? "{}").access_token === "t1", "and in localStorage");
+
+const next = new Backend("https://api.example.test", "sb_publishable_test", { keptIn: name, transport });
+claim(await next.restore() && next.playerId() === "browser-player", "the next visit restores it");
+await next.signOut();
+claim(localStorage.getItem(name) === null, "signing out takes it out of localStorage");
+
+const store = browserStorage();
+store.set(name, "x");
+claim(store.get(name) === "x", "browserStorage keeps what it is given");
+store.remove(name);
+
+// nothing listens on this port: the real fetch answers status 0, not an exception
+const nowhere = new Backend("http://127.0.0.1:9", "sb_publishable_test", { keptIn: name });
+const reply = await nowhere.select("notes");
+claim(reply.status === 0 && reply.error === "Couldn't reach the server", "an unreachable platform answers status 0");
+
+for (const sentence of failed) console.log(`NOT TRUE: ${sentence}`);
+if (!failed.length) console.log("PROBE OK");
+</script>
+</body>
+</html>

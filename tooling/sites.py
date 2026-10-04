@@ -3,7 +3,9 @@
 A site is a folder under sites/ holding a site.json. It is a web app on
 gd-chime for the web (web/gd_chime/), which install_site.py copies into
 the site as sites/<name>/gd_chime/ (gitignored), so a site is served whole
-from its own folder and every site wears the same framework.
+from its own folder and every site wears the same framework. A site may
+also name services in its site.json ("services": ["backend"]), each copied
+in beside it the same way: web/backend/ to sites/<name>/backend/.
 
 A browser is needed to check a site: Chrome or Chromium, found as, in order,
 --chrome on the command line, the CHROME environment variable, then
@@ -24,6 +26,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 FRAMEWORK = ROOT / "web" / "gd_chime"
+## The services a site may name in its site.json, each a folder under web/.
+SERVICES = ("backend",)
 SITES = ROOT / "sites"
 BROWSERS = ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "chrome")
 
@@ -53,6 +57,12 @@ def read_manifest(site: Path) -> dict:
         raise SiteError(f"{path} is not valid JSON: {e}") from None
     if not isinstance(manifest.get("title"), str) or not manifest["title"]:
         raise SiteError(f"{path} needs a 'title'")
+    services = manifest.get("services", [])
+    if not isinstance(services, list) or not all(isinstance(s, str) for s in services):
+        raise SiteError(f"{path}: 'services' is a list of names, as [\"backend\"]")
+    unknown = [s for s in services if s not in SERVICES]
+    if unknown:
+        raise SiteError(f"{path} names {', '.join(unknown)}, which isn't a service (there are: {', '.join(SERVICES)})")
     return manifest
 
 
