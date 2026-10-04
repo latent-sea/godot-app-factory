@@ -169,6 +169,9 @@ html { scroll-padding-top: 1.5rem; }
 #app .DayName, #app .DayMonth { font-size: var(--step--1); font-weight: 600; color: var(--chime-ink-soft); }
 #app .DayNumber { font-size: var(--step-1); font-weight: 800; line-height: 1.2; }
 #app .DayTimes { gap: 0.75rem; }
+#app .DaysAndTimes, #app .Trouble { gap: 1rem; align-items: flex-start; }
+#app .DaysAndTimes { align-items: stretch; }
+#app .Problem { color: var(--chime-warn); font-weight: 600; }
 #app .Times { gap: 0.5rem; flex-wrap: wrap; }
 #app .chime-pressable.TimeChoice { min-width: 6rem; justify-content: center; }
 
@@ -176,7 +179,6 @@ html { scroll-padding-top: 1.5rem; }
 #app .chime-field-holder { gap: 0.35rem; }
 #app .chime-field-label, #app .FieldLabel { font-size: var(--step--1); font-weight: 700; color: var(--chime-ink); }
 #app .chime-field { border-radius: var(--radius); background: var(--chime-ground); border-color: var(--chime-edge); min-height: 2.75rem; }
-#app .Modes { gap: 0.5rem; flex-wrap: wrap; margin-top: -0.75rem; }
 
 #app .Summary { gap: 0; }
 #app .SummaryRow { gap: 0.15rem 1rem; padding: 0.6rem 0; border-top: 1px solid var(--chime-edge); flex-wrap: wrap; align-items: baseline; }

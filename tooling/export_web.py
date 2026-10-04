@@ -5,7 +5,7 @@
 
 Copies each site to build/web/<site>/ - the page, its scripts, its copy of
 the framework - leaving out what only a check needs (probe.js, tests/,
-site.json), and writes build/web/index.html naming every site, so
+site.json) and its tables (backend.sql, which the platform applies), and writes build/web/index.html naming every site, so
 build/web/ is served whole: CI publishes it to GitHub Pages from main. To
 look at it here:
 
@@ -27,7 +27,7 @@ from sites import ROOT, SiteError, find_sites, read_manifest
 
 OUT = ROOT / "build" / "web"
 ## What only a check needs: a site's walk of itself and its tests never reach a host.
-DEVELOPMENT = shutil.ignore_patterns("probe.js", "tests", "site.json", "__pycache__", ".DS_Store")
+DEVELOPMENT = shutil.ignore_patterns("probe.js", "tests", "site.json", "backend.sql", "backend_test.sql", "__pycache__", ".DS_Store")
 
 
 def export(site: Path, out: Path = OUT) -> Path:

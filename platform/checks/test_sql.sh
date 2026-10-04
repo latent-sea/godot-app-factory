@@ -2,8 +2,9 @@
 # The platform's own table and every app's and site's (apps/<app>/backend.sql,
 # sites/<site>/backend.sql) in a real, throwaway PostgreSQL with a stand-in
 # for Supabase (supabase_stub.sql): each loads, loads again (every deploy runs
-# them all), and keeps one player's rows from another. Run by CI; prints PASS
-# test_sql.sh, or what failed.
+# them all), and keeps one player's rows from another. Then each one's own
+# promises, in a backend_test.sql beside it, if it has one. Run by CI; prints
+# PASS test_sql.sh, or what failed.
 #
 #   bash platform/checks/test_sql.sh
 set -euo pipefail
@@ -44,6 +45,11 @@ claim "$(as "$b" "insert into public.platform_check (owner, body) values ('$a', 
 claim "$(sql -c "select count(*) from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'platform_check'")" 1 "the table is published live"
 sql -c "delete from auth.users where id = '$a'"
 claim "$(sql -c "select count(*) from public.platform_check")" 0 "deleting the player deletes their rows"
+
+for file in "${files[@]}"; do
+  test_file="$(dirname "$file")/backend_test.sql"
+  if [ -f "$test_file" ] && ! sql < "$test_file"; then echo "NOT TRUE: ${test_file#"$repo"/} holds"; failed=1; fi
+done
 
 [ "$failed" = 0 ] && echo "PASS test_sql.sh (${#files[@]} file(s))"
 exit "$failed"

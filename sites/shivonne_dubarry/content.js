@@ -9,7 +9,7 @@ export const SITE = {
   intro: "Introduction placeholder: two or three sentences in her words on how she works and what someone can expect. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.",
   credentials: "Credentials placeholder: her qualifications.",
   email: "hello@example.com",
-  location: "Location placeholder: where she practises, and whether sessions are online, in person or both.",
+  location: "Location placeholder: where she is based. Sessions are online.",
   registration: "Registration placeholder: her professional body and registration number.",
   crisis: "This page and its booking are not for emergencies. If you are in crisis or at risk, call your local emergency number. Crisis line placeholder: the number to call where she practises.",
   land: "Land acknowledgement placeholder: her words, if she chooses to include one.",
@@ -51,32 +51,8 @@ export const FEES_NOTE = "Placeholder: cancellation policy, reduced-fee places, 
 
 export const QUESTIONS = [
   ["Is what I say confidential?", "Answer placeholder: confidentiality and its limits, in her words."],
-  ["Do you work online?", "Answer placeholder: how online sessions work, and in-person ones if she offers them."],
+  ["How do online sessions work?", "Answer placeholder: how online sessions work."],
   ["How many sessions will I need?", "Answer placeholder: how long people usually work with her."],
   ["What if I'm not sure counselling is for me?", "Answer placeholder: what she suggests for someone unsure."],
   ["How do I cancel or move a session?", "Answer placeholder: her cancellation policy."],
 ];
-
-/**
- * When she can be booked: a placeholder until a real calendar is connected.
- * The next fourteen days from tomorrow, weekdays only, some hours taken, in
- * the visitor's own time.
- */
-export function openings(from = new Date()) {
-  const hours = [9, 10, 11, 13, 14, 15, 16];
-  const days = [];
-  for (let ahead = 1; ahead <= 14; ahead++) {
-    const date = new Date(from.getFullYear(), from.getMonth(), from.getDate() + ahead);
-    const weekday = date.getDay();
-    const open = weekday !== 0 && weekday !== 6;
-    const times = open ? hours
-      .filter((hour) => (date.getDate() * 3 + hour) % 4 !== 0)
-      .map((hour) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour)) : [];
-    days.push({ day: dayId(date), date, times: times.map((at) => ({ id: `${dayId(at)}T${String(at.getHours()).padStart(2, "0")}:00`, at })) });
-  }
-  return days;
-}
-
-function dayId(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
